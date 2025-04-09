@@ -21,10 +21,14 @@ class TestErrorDialog(unittest.TestCase):
     
     def setUp(self):
         """Set up test fixtures."""
-        self.app = MagicMock()
         self.message = "Test error message"
         self.dialog = ErrorDialog(self.message)
-        self.dialog.app = self.app
+
+        # Mock the app property using a patch
+        patcher = patch.object(ErrorDialog, 'app', new_callable=MagicMock)
+        self.addCleanup(patcher.stop)
+        self.mock_app = patcher.start()
+        self.dialog.app = self.mock_app
         
     def test_initialization(self):
         """Test that the dialog is initialized with the correct message."""

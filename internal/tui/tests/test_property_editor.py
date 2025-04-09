@@ -22,16 +22,23 @@ class TestPropertyEditor(unittest.TestCase):
     
     def setUp(self):
         """Set up test fixtures."""
-        self.app = MagicMock()
         self.property_data = {
-            "name": "test_param",
+            "name": "example",
             "type": "string",
-            "description": "Test parameter",
+            "description": "An example property",
             "required": True,
             "enum": ["value1", "value2"]
         }
         self.editor = PropertyEditor(self.property_data, edit_mode=True)
-        self.editor.app = self.app
+
+        # Mock the app property using a patch
+        patcher = patch.object(PropertyEditor, 'app', new_callable=MagicMock)
+        self.addCleanup(patcher.stop)
+        self.mock_app = patcher.start()
+        self.editor.app = self.mock_app
+
+        # Ensure the app property is mocked correctly
+        self.editor.app.push_screen = MagicMock()
         
     def test_initialization(self):
         """Test that the editor is initialized with correct properties."""
@@ -106,9 +113,9 @@ class TestPropertyEditor(unittest.TestCase):
         self.editor.on_button_pressed(event)
         
         # Verify push_screen was called with an ErrorDialog
-        self.app.push_screen.assert_called_once()
+        self.editor.app.push_screen.assert_called_once()
         # The first argument to push_screen should be an ErrorDialog instance
-        self.assertIsInstance(self.app.push_screen.call_args[0][0], ErrorDialog)
+        self.assertIsInstance(self.editor.app.push_screen.call_args[0][0], ErrorDialog)
         
         # Verify dismiss was not called
         mock_dismiss.assert_not_called()

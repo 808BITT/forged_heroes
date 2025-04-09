@@ -141,7 +141,7 @@ The TUI module is organized into a hierarchical structure of components:
 ### Running Tests
 
 ```bash
-python -m unittest discover
+python run_tests.py
 ```
 
 Or run specific test files:
@@ -149,6 +149,29 @@ Or run specific test files:
 ```bash
 python -m unittest internal/tool/test_tool_initialization.py
 ```
+
+### Troubleshooting Failing Tests
+
+If tests are failing:
+
+1. Ensure all dependencies are installed:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. Verify the Python version is 3.10 or higher:
+   ```bash
+   python --version
+   ```
+
+3. Check for missing or outdated test cases. Add tests for any uncovered functionality.
+
+4. Run tests with verbose output to identify specific failures:
+   ```bash
+   python -m unittest discover internal -v
+   ```
+
+5. Debug failing tests by inspecting the code and adding print statements or breakpoints.
 
 ### Creating Tests for TUI Components
 

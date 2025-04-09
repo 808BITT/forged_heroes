@@ -254,3 +254,20 @@ class ToolWizard(ModalScreen):
     def action_save(self) -> None:
         """Shortcut to generate JSON."""
         self.generate_json()
+    
+    def load_tool(self, filepath):
+        """Load a tool specification from a JSON file."""
+        try:
+            with open(filepath, "r") as f:
+                tool_data = json.load(f)
+                self.filepath = filepath
+                self.tool_data = tool_data
+                self.properties = self.tool_data["function"]["parameters"]["properties"]
+                self.required = self.tool_data["function"]["parameters"]["required"]
+                self.title = f"Edit: {os.path.basename(filepath)}"
+                self.refresh_params_list()
+        except Exception as e:
+            self.app.push_screen(
+                ErrorDialog(f"Failed to load tool: {e}"),
+                lambda _: None
+            )
