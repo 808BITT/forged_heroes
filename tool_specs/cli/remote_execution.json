@@ -1,0 +1,34 @@
+{
+  "type": "function",
+  "function": {
+    "name": "remote_execution",
+    "description": "Execute a command via SSH",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "user": {
+          "type": "string",
+          "description": "The PAM user"
+        },
+        "host": {
+          "type": "string",
+          "description": "The hostname/IP to connect to"
+        },
+        "password": {
+          "type": "string",
+          "description": "Password to login with"
+        },
+        "command": {
+          "type": "string",
+          "description": "The command to execute"
+        }
+      },
+      "required": [
+        "user",
+        "host",
+        "password",
+        "command"
+      ]
+    }
+  }
+}
