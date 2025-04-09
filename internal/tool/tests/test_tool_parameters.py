@@ -3,7 +3,7 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
 
 import unittest
-from internal.tool.parameter import ToolProperty, ToolParams
+from internal.tool.core.parameter import ToolProperty, ToolParams
 
 class TestToolProperty(unittest.TestCase):
     def test_tool_property_creation(self):

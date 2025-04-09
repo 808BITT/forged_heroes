@@ -4,8 +4,8 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
 
 import unittest
 import json
-from internal.tool.parameter import ToolParams, ToolProperty
-from internal.tool.tool import Tool
+from internal.tool.core.parameter import ToolParams, ToolProperty
+from internal.tool.core.tool import Tool
 
 
 class TestToolInitialization(unittest.TestCase):
