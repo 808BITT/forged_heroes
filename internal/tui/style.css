@@ -111,12 +111,12 @@
     min-width: 15;
     padding-right: 1;
     text-align: right;
-    align-self: center; /* Ensure labels are vertically centered */
+    align: center middle; /* Ensure labels are vertically centered */
 }
 
 .form-row Input, .form-row Select, .form-row Switch {
     width: 70%;
-    align-self: center; /* Ensure inputs are vertically aligned with labels */
+    align: center middle; /* Ensure inputs are vertically aligned with labels */
 }
 
 /* Save dialog specific styles */

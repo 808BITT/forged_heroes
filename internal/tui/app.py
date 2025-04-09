@@ -24,7 +24,7 @@ class Tui(App):
     
     TITLE = "Forged Heroes: Tool Manager"
     SUB_TITLE = "Create, Edit, and Delete Tools for your Heroes"
-    CSS_PATH = "internal/tui/style.css"  # Corrected path
+    CSS_PATH = "style.css"  # Corrected path
     
     BINDINGS = [
         Binding("f1", "new_tool", "New Tool"),
@@ -179,3 +179,6 @@ class Tui(App):
     def stop(self):
         """Stop the TUI application."""
         self.running = False
+        super().exit()
+        # import sys
+        # sys.exit(0)  # Forcefully terminate the application
