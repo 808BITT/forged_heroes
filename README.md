@@ -136,6 +136,19 @@ The TUI module is organized into a hierarchical structure of components:
 - **Remote Execution**: Execute tools on remote systems
 - **Output Processing**: Process and transform tool outputs
 
+## CSS and Styling
+
+This project uses `textual/css`, a CSS-like syntax specific to the Textual framework. It is not fully compatible with standard HTML/CSS. If you encounter linting errors, ensure your editor or linter is configured for `textual/css`.
+
+### Common Issues
+- **Invalid Properties**: Some standard CSS properties, like `scrollbar-width`, are not supported. Refer to the Textual documentation for supported properties.
+- **Parsing Errors**: Ensure all values are valid for `textual/css`. For example, use `solid red` instead of `5px solid` for borders.
+
+### Troubleshooting
+- Verify your CSS file uses only supported properties.
+- Test changes by running the application and observing the UI.
+- Refer to the Textual documentation for guidance on styling.
+
 ## Development
 
 ### Running Tests
@@ -227,6 +240,28 @@ weather_tool.parameters.add_property(
     )
 )
 ```
+
+## Screenshots
+
+Here are some screenshots showcasing the application:
+
+### Main Screen
+![Main Screen](./screenshots/main_screen.jpg)
+
+### New Tool
+![New Tool](./screenshots/new_tool.jpg)
+
+### Add Tool Parameter
+![Add Tool Parameter](./screenshots/add_tool_parameter.jpg)
+
+### Edit Tool
+![Edit Tool](./screenshots/edit_tool.jpg)
+
+### Edit Tool Property
+![Edit Tool Property](./screenshots/edit_tool_property.jpg)
+
+### Help Screen
+![Help Screen](./screenshots/help_screen.jpg)
 
 ## Contributing
 

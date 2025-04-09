@@ -14,6 +14,8 @@ from textual.app import App
 from textual.widgets import Button
 
 from internal.tui.dialogs.error import ErrorDialog
+from internal.tui.dialogs.file import SaveFileDialog
+from internal.tui.app import ToolEditor
 
 
 class TestErrorDialog(unittest.TestCase):
@@ -50,6 +52,21 @@ class TestErrorDialog(unittest.TestCase):
         
         # Verify dismiss was called with True
         self.dialog.dismiss.assert_called_once_with(True)
+
+    def test_save_file_dialog_ui_elements(self):
+        """Test that all UI elements in the Save File Dialog are visible and aligned."""
+        dialog = SaveFileDialog(content="Test content")
+        self.assertIsNotNone(dialog.query_one("#folder-select"))
+        self.assertIsNotNone(dialog.query_one("#filename-input"))
+        self.assertIsNotNone(dialog.query_one("#save-file-btn"))
+        self.assertIsNotNone(dialog.query_one("#cancel-file-btn"))
+
+    def test_tool_editor_ui_elements(self):
+        """Test that all UI elements in the Tool Editor are visible and aligned."""
+        editor = ToolEditor(filepath="test.json", content="{}")
+        self.assertIsNotNone(editor.query_one("#tool-editor"))
+        self.assertIsNotNone(editor.query_one("#save-btn"))
+        self.assertIsNotNone(editor.query_one("#cancel-btn"))
 
 
 if __name__ == "__main__":

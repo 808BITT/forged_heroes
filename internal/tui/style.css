@@ -47,7 +47,9 @@
     height: 80%;
     background: $surface;
     border: solid $primary;
-    padding: 1;
+    padding: 2;
+    margin: 1 1 1 1; /* Corrected margin to specify all sides */
+    border-right: solid #000; /* Corrected border-right to include a valid color */
 }
 
 .editor-title {
@@ -80,7 +82,9 @@
     height: 80%;
     background: $surface;
     border: solid $primary;
-    padding: 1;
+    padding: 2;
+    margin: 1 1 1 1; /* Corrected margin to specify all sides */
+    border-right: solid #000; /* Corrected border-right to include a valid color */
     overflow-y: auto;
 }
 
@@ -191,6 +195,8 @@
     background: $surface;
     border: solid $primary;
     padding: 2;
+    margin: 1 1 1 1; /* Corrected margin to specify all sides */
+    border-right: solid #000; /* Corrected border-right to include a valid color */
 }
 
 .new-folder-dialog {
@@ -198,6 +204,8 @@
     background: $surface;
     border: solid $primary;
     padding: 2;
+    margin: 1 1 1 1; /* Corrected margin to specify all sides */
+    border-right: solid #000; /* Corrected border-right to include a valid color */
 }
 
 .dialog-buttons {
