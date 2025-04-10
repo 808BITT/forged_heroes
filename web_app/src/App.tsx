@@ -1,34 +1,25 @@
-import { useEffect } from 'react';
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import './App.css';
-import AppLayout from './components/AppLayout.tsx';
-import Dashboard from './components/Dashboard.tsx';
+import MainLayout from './components/layout/main-layout.tsx';
+import Dashboard from './pages/Dashboard.tsx';
+import HomePage from './pages/HomePage.tsx';
 import ToolEditor from './components/ToolEditor.tsx';
-import ToolList from './components/ToolList';
 import { ThemeProvider } from './components/ui/theme-provider';
-import { useToolStore } from './store/toolStore';
 
 function App() {
-  const loadToolSpecifications = useToolStore(state => state.loadToolSpecifications);
-
-  // Load tool specifications when the app starts
-  useEffect(() => {
-    loadToolSpecifications();
-  }, [loadToolSpecifications]);
-
   return (
     <ThemeProvider defaultTheme="dark">
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<AppLayout />}>
-            <Route index element={<Dashboard />} />
-            <Route path="tools" element={<ToolList />} />
+      <Router>
+        <MainLayout>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="tools/new" element={<ToolEditor />} />
             <Route path="tools/:id" element={<ToolEditor />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
+          </Routes>
+        </MainLayout>
+      </Router>
     </ThemeProvider>
   );
 }
