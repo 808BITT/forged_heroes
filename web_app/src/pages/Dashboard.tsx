@@ -1,12 +1,26 @@
-import React from 'react';
+import { useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { Link } from 'react-router-dom';
+import { useToolStore } from '../store/toolStore';
+import ToolList from '../components/ToolList';
 
 export default function Dashboard(): JSX.Element {
+  const getStats = useToolStore(state => state.getStats);
+  const loadToolSpecifications = useToolStore(state => state.loadToolSpecifications);
+  const isLoaded = useToolStore(state => state.isLoaded);
+  
+  useEffect(() => {
+    if (!isLoaded) {
+      loadToolSpecifications();
+    }
+  }, [isLoaded, loadToolSpecifications]);
+  
+  const stats = getStats();
+
   return (
     <div className="space-y-8">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap justify-between items-center gap-4">
         <h1 className="text-3xl font-bold">Dashboard</h1>
         <Button asChild>
           <Link to="/tools/new">Create New Tool</Link>
@@ -21,8 +35,10 @@ export default function Dashboard(): JSX.Element {
             <CardDescription>Your created tools</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">5</p>
-            <p className="text-sm text-muted-foreground mt-2">+2 from last month</p>
+            <p className="text-3xl font-bold">{stats.totalTools}</p>
+            <p className="text-sm text-muted-foreground mt-2">
+              Tools ready to equip your LLM Heroes
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -31,40 +47,31 @@ export default function Dashboard(): JSX.Element {
             <CardDescription>Tools currently in use</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">3</p>
-            <p className="text-sm text-muted-foreground mt-2">75% of your tools</p>
+            <p className="text-3xl font-bold">{stats.activeTools}</p>
+            <p className="text-sm text-muted-foreground mt-2">
+              {stats.totalTools > 0
+                ? `${Math.round((stats.activeTools / stats.totalTools) * 100)}% of your tools`
+                : 'No tools created yet'}
+            </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle>Latest Activity</CardTitle>
-            <CardDescription>Recent tool updates</CardDescription>
+            <CardTitle>Recently Updated</CardTitle>
+            <CardDescription>Tools updated in the last 30 days</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground">Last edited 2 days ago</p>
+            <p className="text-3xl font-bold">{stats.recentlyUpdated}</p>
+            <p className="text-sm text-muted-foreground mt-2">
+              Keep your tools up-to-date for best results
+            </p>
           </CardContent>
         </Card>
       </div>
 
-      <div>
-        <h2 className="text-2xl font-bold mb-4">Your Tools</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Sample tool cards - in a real app these would be generated from your data */}
-          {[1, 2, 3].map((tool) => (
-            <Card key={tool} className="hover:shadow-md transition-shadow">
-              <CardHeader>
-                <CardTitle>Tool {tool}</CardTitle>
-                <CardDescription>Created on {new Date().toLocaleDateString()}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground mb-4">Tool description goes here...</p>
-                <Button variant="outline" asChild className="w-full">
-                  <Link to={`/tools/${tool}`}>Edit Tool</Link>
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+      {/* Tool List */}
+      <div className="mt-8">
+        <ToolList />
       </div>
     </div>
   );

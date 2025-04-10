@@ -1,54 +1,143 @@
-# React + TypeScript + Vite
+# Forge2: LLM Tool Specification Builder
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+![Forge2 Logo](public/forge2-logo.svg)
 
-Currently, two official plugins are available:
+Forge2 is a modern web application for creating, managing, and sharing tool specifications for Large Language Models (LLMs). It provides an intuitive interface for building function calling specifications that can be used with LLMs like GPT-4 to give them access to external tools and APIs.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Purpose
 
-## Expanding the ESLint configuration
+Equip your "LLM Heroes" with powerful tools! Forge2 makes it easy to define structured JSON tool specifications that can be copy-pasted into LLM prompts, enabling models to request specific actions through function calling.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Features
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+- **Visual Tool Editor**: Create and edit tool specifications with an intuitive UI
+- **Parameter Management**: Define tool parameters with type validation and descriptions
+- **JSON Generation**: Automatically convert your tool definitions to proper JSON format
+- **Tool Organization**: Categorize tools and search through your collection
+- **API Backend**: Store tools persistently on a server for sharing and reuse
+- **Responsive Design**: Works on desktop and mobile devices
+
+## Technology Stack
+
+- **Frontend**: React, TypeScript, Vite, Tailwind CSS, Zustand
+- **Backend**: Node.js, Express
+- **Styling**: TailwindCSS with shadcn/ui components
+- **State Management**: Zustand
+- **Animation**: Framer Motion
+- **Routing**: React Router
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js v18+ and npm
+
+### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/forge2.git
+   cd forge2/web_app
+   ```
+
+2. Install frontend dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Install backend dependencies:
+   ```bash
+   cd server
+   npm install
+   cd ..
+   ```
+
+### Running the Application
+
+1. Start the backend server:
+   ```bash
+   cd server
+   node server.js
+   ```
+
+2. In a new terminal, start the frontend development server:
+   ```bash
+   npm run dev
+   ```
+
+3. Open your browser and navigate to:
+   ```
+   http://localhost:5173
+   ```
+
+## Usage Guide
+
+### Creating a Tool
+
+1. Navigate to the "Tools" page and click "New Tool"
+2. Fill in the tool name and description
+3. Add parameters by clicking "Add Parameter"
+4. For each parameter, specify:
+   - Name
+   - Type (string, number, boolean, object, array)
+   - Description
+   - Whether it's required
+5. Click "Save" to store your tool
+6. Use the "Copy" button to copy the JSON specification for use with an LLM
+
+### Example Tool JSON
+
+```json
+{
+  "type": "function",
+  "function": {
+    "name": "get_weather",
+    "description": "Get current weather for a specified location",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "location": {
+          "type": "string",
+          "description": "City name or address"
+        },
+        "units": {
+          "type": "string",
+          "description": "Temperature units (celsius or fahrenheit)"
+        }
+      },
+      "required": ["location"]
+    }
+  }
+}
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Project Structure
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
 ```
+web_app/
+├── public/              # Static assets
+├── server/              # Backend API server
+│   ├── data/            # Tool storage
+│   └── server.js        # Express server
+├── src/
+│   ├── components/      # React components
+│   │   ├── ui/          # UI components
+│   │   └── layout/      # Layout components
+│   ├── pages/           # Page components
+│   ├── services/        # API services
+│   ├── store/           # Zustand state management
+│   └── lib/             # Utility functions
+└── package.json         # Project dependencies
+```
+
+## Future Enhancements
+
+- User authentication and profiles
+- Sharing tools between users
+- Tool versioning and history
+- Tool testing and validation
+- Integration with popular LLM platforms
+
+## License
+
+MIT

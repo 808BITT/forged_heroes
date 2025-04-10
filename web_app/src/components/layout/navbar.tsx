@@ -1,26 +1,52 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { Button } from '../ui/button';
-import { Menu, X, Wrench } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
+import { cn } from '../../lib/utils';
 
 export default function Navbar(): JSX.Element {
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
+  const location = useLocation();
+
+  const navItems = [
+    { name: 'Home', path: '/' },
+    { name: 'Dashboard', path: '/dashboard' },
+    { name: 'Tools', path: '/tools' },
+  ];
+
+  const isActive = (path: string) => {
+    if (path === '/') return location.pathname === path;
+    return location.pathname.startsWith(path);
+  };
 
   return (
-    <nav className="bg-background border-b">
+    <nav className="bg-background border-b sticky top-0 z-50">
       <div className="container mx-auto px-4 py-4">
         <div className="flex justify-between items-center">
           <div className="flex items-center">
-            <Link to="/" className="font-bold text-xl">Forge2</Link>
+            <Link to="/" className="font-bold text-xl bg-gradient-to-r from-purple-600 to-blue-500 bg-clip-text text-transparent">
+              Tool Forge
+            </Link>
           </div>
           
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-6">
-            <Link to="/dashboard" className="text-foreground hover:text-primary">Dashboard</Link>
-            <Link to="/tools/new" className="text-foreground hover:text-primary">New Tool</Link>
-            <Link to="/projects" className="text-foreground hover:text-primary">Projects</Link>
-            <Link to="/settings" className="text-foreground hover:text-primary">Settings</Link>
-            <Button variant="default">Get Started</Button>
+            {navItems.map(item => (
+              <Link 
+                key={item.path}
+                to={item.path} 
+                className={cn(
+                  "text-foreground hover:text-primary transition-colors",
+                  isActive(item.path) && "text-primary font-medium"
+                )}
+              >
+                {item.name}
+              </Link>
+            ))}
+            
+            <Button variant="default" asChild>
+              <Link to="/tools/new">Create Tool</Link>
+            </Button>
           </div>
           
           {/* Mobile Navigation Toggle */}
@@ -38,11 +64,27 @@ export default function Navbar(): JSX.Element {
         {/* Mobile Navigation Menu */}
         {isMenuOpen && (
           <div className="md:hidden mt-3 space-y-3 py-3">
-            <Link to="/dashboard" className="block text-foreground hover:text-primary py-2">Dashboard</Link>
-            <Link to="/tools/new" className="block text-foreground hover:text-primary py-2">New Tool</Link>
-            <Link to="/projects" className="block text-foreground hover:text-primary py-2">Projects</Link>
-            <Link to="/settings" className="block text-foreground hover:text-primary py-2">Settings</Link>
-            <Button variant="default" className="w-full mt-3">Get Started</Button>
+            {navItems.map(item => (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={cn(
+                  "block py-2 text-foreground hover:text-primary transition-colors",
+                  isActive(item.path) && "text-primary font-medium"
+                )}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                {item.name}
+              </Link>
+            ))}
+            <Button 
+              variant="default" 
+              className="w-full mt-3"
+              asChild
+              onClick={() => setIsMenuOpen(false)}
+            >
+              <Link to="/tools/new">Create Tool</Link>
+            </Button>
           </div>
         )}
       </div>
