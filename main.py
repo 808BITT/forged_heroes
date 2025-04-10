@@ -1,4 +1,6 @@
+#!./.venv/bin/python
 from internal.tui import Tui
+
 
 def main():
     print("Forged Heroes: The Forge is now active.")
