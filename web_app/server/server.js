@@ -128,8 +128,7 @@ app.delete('/api/tools/:id', async (req, res) => {
     
     delete tools[id];
     await saveTools(tools);
-    
-    res.status(200).json({ message: 'Tool deleted' });
+    res.status(204).send();
   } catch (error) {
     res.status(500).json({ message: 'Failed to delete tool' });
   }

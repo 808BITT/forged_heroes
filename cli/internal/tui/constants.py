@@ -12,6 +12,9 @@ BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 # Directory for storing tool specifications - use absolute path for reliability
 TOOL_SPECS_DIR = os.path.join(BASE_DIR, "tool_specs")
 
+# Updated tool storage location
+TOOL_STORAGE_FILE = os.path.join(BASE_DIR, "data", "tools.json")
+
 # Logging directory
 LOG_DIR = os.path.join(BASE_DIR, "logs")
 

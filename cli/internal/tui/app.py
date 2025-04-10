@@ -10,7 +10,7 @@ from textual.widgets import Header, Footer, DirectoryTree, Static, Label
 from textual.containers import Container
 from textual.binding import Binding
 
-from internal.tui.constants import TOOL_SPECS_DIR, CSS_PATH
+from internal.tui.constants import TOOL_STORAGE_FILE, CSS_PATH
 from internal.tui.screens.tool_wizard import ToolWizard
 from internal.tui.screens.help import HelpScreen
 from internal.tui.screens.tool_editor import ToolEditor
@@ -41,13 +41,13 @@ class Tui(App):
     def __init__(self):
         super().__init__()
         self.running = True
-        self.tool_manager = ToolManager(TOOL_SPECS_DIR)
+        self.tool_manager = ToolManager()
         
     def compose(self) -> ComposeResult:
         """Create child widgets for the app."""
         yield Header()
         yield Container(
-            DirectoryTree(TOOL_SPECS_DIR, id="file-tree"),
+            DirectoryTree(os.path.dirname(TOOL_STORAGE_FILE), id="file-tree"),
             Container(
                 Static("Select a tool specification to view", id="preview-title"),
                 Static("", id="preview-content"),

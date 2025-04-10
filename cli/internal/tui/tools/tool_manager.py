@@ -15,59 +15,56 @@ from internal.tool.core.property import ToolProperty
 # Configure logging
 logger = logging.getLogger(__name__)
 
+# Define the unified tool storage file
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+TOOL_STORAGE_FILE = os.path.join(BASE_DIR, "data", "tools.json")
+
 class ToolManager:
     """Manager for tool operations."""
     
-    def __init__(self, tool_specs_dir):
-        """Initialize the tool manager with the directory for tool specifications."""
-        self.tool_specs_dir = tool_specs_dir
-        self._ensure_dir_exists()
-    
-    def _ensure_dir_exists(self):
-        """Ensure the tool specifications directory exists."""
-        os.makedirs(self.tool_specs_dir, exist_ok=True)
-    
-    def get_tool_folders(self):
-        """Get a list of folders in the tool specifications directory."""
-        folders = []
+    def __init__(self):
+        """Initialize the ToolManager to use the unified JSON file."""
+        self.tool_storage_file = TOOL_STORAGE_FILE
+
+    def get_tools(self):
+        """Retrieve all tools from the unified JSON file."""
         try:
-            for item in os.listdir(self.tool_specs_dir):
-                item_path = os.path.join(self.tool_specs_dir, item)
-                if os.path.isdir(item_path):
-                    folders.append(item)
-        except Exception as e:
-            logger.error(f"Error listing tool folders: {e}")
-        return folders
-    
-    def load_tool(self, filepath):
-        """Load a tool specification from a JSON file."""
-        try:
-            with open(filepath, "r") as f:
+            with open(self.tool_storage_file, "r") as f:
                 return json.load(f)
         except Exception as e:
-            logger.error(f"Error loading tool from {filepath}: {e}")
-            raise
-    
-    def save_tool(self, filepath, content):
-        """Save a tool specification to a JSON file."""
+            logger.error(f"Error retrieving tools: {e}")
+            return {}
+
+    def save_tool(self, tool_id, tool_data):
+        """Save or update a tool in the unified JSON file."""
+        tools = self.get_tools()
+        tools[tool_id] = tool_data
         try:
-            folder_path = os.path.dirname(filepath)
-            os.makedirs(folder_path, exist_ok=True)
-            
-            with open(filepath, "w") as f:
-                f.write(content)
+            with open(self.tool_storage_file, "w") as f:
+                json.dump(tools, f, indent=2)
+        except Exception as e:
+            logger.error(f"Error saving tool {tool_id}: {e}")
+
+    def load_tool(self, tool_id):
+        """Load a tool specification from the unified JSON file."""
+        try:
+            tools = self.get_tools()
+            return tools.get(tool_id)
+        except Exception as e:
+            logger.error(f"Error loading tool {tool_id} from storage: {e}")
+            raise
+
+    def delete_tool(self, tool_id):
+        """Delete a tool specification from the unified JSON file."""
+        try:
+            tools = self.get_tools()
+            if tool_id in tools:
+                del tools[tool_id]
+                with open(self.tool_storage_file, "w") as f:
+                    json.dump(tools, f, indent=2)
             return True
         except Exception as e:
-            logger.error(f"Error saving tool to {filepath}: {e}")
-            raise
-    
-    def delete_tool(self, filepath):
-        """Delete a tool specification file."""
-        try:
-            os.remove(filepath)
-            return True
-        except Exception as e:
-            logger.error(f"Error deleting tool {filepath}: {e}")
+            logger.error(f"Error deleting tool {tool_id} from storage: {e}")
             raise
     
     def format_tool_content(self, content):

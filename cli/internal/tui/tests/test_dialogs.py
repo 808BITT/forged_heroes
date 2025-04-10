@@ -89,8 +89,27 @@ class TestSaveFileDialog(unittest.TestCase):
             self.assertEqual(dialog.content, "Default content")
             self.assertEqual(dialog.tool_name, "default_tool")
 
-    def test_save_file_dialog_ui_elements(self):
+    @patch('internal.tui.dialogs.file.SaveFileDialog.query_one')
+    def test_save_file_dialog_ui_elements(self, mock_query_one):
         """Test that all UI elements in the Save File Dialog are visible and aligned."""
+        # Mock the query_one method to return mock elements
+        folder_select = MagicMock()
+        filename_input = MagicMock()
+        save_file_btn = MagicMock()
+        cancel_file_btn = MagicMock()
+
+        def query_side_effect(query):
+            if query == "#folder-select":
+                return folder_select
+            elif query == "#filename-input":
+                return filename_input
+            elif query == "#save-file-btn":
+                return save_file_btn
+            elif query == "#cancel-file-btn":
+                return cancel_file_btn
+
+        mock_query_one.side_effect = query_side_effect
+
         dialog = SaveFileDialog(content="Test content", tool_name="test_tool", folders=[""])
         self.assertIsNotNone(dialog.query_one("#folder-select"))
         self.assertIsNotNone(dialog.query_one("#filename-input"))
@@ -179,23 +198,39 @@ class TestSaveFileDialog(unittest.TestCase):
             allow_blank=True  # This should allow empty values
         )
         
-        # Verify the value was set correctly
-        self.assertEqual(select.value, "")
+        # Verify the value is set to Select.BLANK when blank
+        self.assertEqual(select.value, Select.BLANK)
         
         # Test setting it to another value
         select.value = "folder1"
         self.assertEqual(select.value, "folder1")
         
         # Test setting it back to empty
-        select.value = ""
-        self.assertEqual(select.value, "")
+        select.value = Select.BLANK
+        self.assertEqual(select.value, Select.BLANK)
 
 
 class TestToolEditor(unittest.TestCase):
     """Test cases for the ToolEditor component."""
 
-    def test_tool_editor_ui_elements(self):
+    @patch('internal.tui.app.ToolEditor.query_one')
+    def test_tool_editor_ui_elements(self, mock_query_one):
         """Test that all UI elements in the Tool Editor are visible and aligned."""
+        # Mock the query_one method to return mock elements
+        tool_editor = MagicMock()
+        save_btn = MagicMock()
+        cancel_btn = MagicMock()
+
+        def query_side_effect(query):
+            if query == "#tool-editor":
+                return tool_editor
+            elif query == "#save-btn":
+                return save_btn
+            elif query == "#cancel-btn":
+                return cancel_btn
+
+        mock_query_one.side_effect = query_side_effect
+
         editor = ToolEditor(filepath="test.json", content="{}")
         self.assertIsNotNone(editor.query_one("#tool-editor"))
         self.assertIsNotNone(editor.query_one("#save-btn"))

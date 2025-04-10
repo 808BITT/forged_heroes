@@ -12,7 +12,7 @@ from textual.binding import Binding
 from textual.app import ComposeResult
 from textual.widgets import DirectoryTree
 
-from internal.tui.constants import TOOL_SPECS_DIR
+from internal.tui.constants import TOOL_SPECS_DIR, TOOL_STORAGE_FILE
 from internal.tui.dialogs.error import ErrorDialog
 from internal.tui.dialogs.file import SaveFileDialog
 
@@ -82,52 +82,29 @@ class ToolEditor(ModalScreen):
     def action_save(self) -> None:
         """Save the tool specification and close the modal."""
         content = self.query_one("#tool-editor").text
-        
+
         try:
             # Validate JSON
             json_content = json.loads(content)
-            
+
             if self.is_new:
-                # For new files, ask for a file path
-                def handle_save_result(result):
-                    if result:
-                        logger.info("New tool saved successfully")
-                    self.app.pop_screen()
-                
-                # Get all available folders
-                folders = []
-                try:
-                    for item in os.listdir(TOOL_SPECS_DIR):
-                        item_path = os.path.join(TOOL_SPECS_DIR, item)
-                        if os.path.isdir(item_path):
-                            folders.append(item)
-                except Exception:
-                    pass
-                
-                # Use SaveFileDialog to get save location
-                self.app.push_screen(
-                    SaveFileDialog(content, folders=folders),
-                    handle_save_result
-                )
+                # Save to the unified JSON file
+                with open(TOOL_STORAGE_FILE, "r") as f:
+                    tools = json.load(f)
+                tools[json_content["function"]["name"]] = json_content
+                with open(TOOL_STORAGE_FILE, "w") as f:
+                    json.dump(tools, f, indent=2)
+                logger.info("New tool saved successfully")
             else:
-                # For existing files, save directly
-                try:
-                    with open(self.filepath, "w") as f:
-                        f.write(content)
-                    self.app.pop_screen()
-                    
-                    # Refresh the directory tree
-                    try:
-                        self.app.query_one(DirectoryTree).reload()
-                    except Exception:
-                        pass  # Directory tree might not be available
-                    
-                    logger.info(f"Tool saved to {self.filepath}")
-                except Exception as e:
-                    self.app.push_screen(
-                        ErrorDialog(f"Error saving file: {e}"),
-                        lambda _: None
-                    )
+                # Update existing tool in the unified JSON file
+                with open(TOOL_STORAGE_FILE, "r") as f:
+                    tools = json.load(f)
+                tools[json_content["function"]["name"]] = json_content
+                with open(TOOL_STORAGE_FILE, "w") as f:
+                    json.dump(tools, f, indent=2)
+                logger.info(f"Tool updated successfully in {TOOL_STORAGE_FILE}")
+
+            self.app.pop_screen()
         except json.JSONDecodeError as e:
             logger.error(f"JSON validation error: {e}")
             self.app.push_screen(

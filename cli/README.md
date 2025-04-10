@@ -63,7 +63,7 @@ python -m unittest internal/tool/test_tool_initialization.py
 
 Tools can be added by:
 
-1. Creating a new tool specification in `tool_specs/`
+1. Creating a new tool specification in `data/tools.json`
 2. Using the TUI wizard interface for guided creation
 3. Programmatically creating a tool using the Tool class
 
@@ -108,7 +108,7 @@ cli/
 │       ├── property.py      # Tool property definitions
 │       └── tool.py          # Core tool class
 ├── scripts/                 # Utility scripts
-└── tool_specs/              # Tool specification files
+└── data/                    # Unified tool specification file
 ```
 
 ## Troubleshooting

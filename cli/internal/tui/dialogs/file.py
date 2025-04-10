@@ -3,13 +3,14 @@ File-related dialog components.
 """
 
 import os
+import json
 import logging
 from textual.screen import ModalScreen
 from textual.widgets import Button, Static, Input, Select, Label, DirectoryTree
 from textual.containers import Container, Horizontal
 from textual.app import ComposeResult
 
-from internal.tui.constants import TOOL_SPECS_DIR
+from internal.tui.constants import TOOL_STORAGE_FILE
 from internal.tui.dialogs.error import ErrorDialog
 
 # Configure logging
@@ -22,21 +23,17 @@ class SaveFileDialog(ModalScreen):
         super().__init__()
         self.content = content
         self.tool_name = tool_name
-        self.folders = folders if folders is not None else self.get_folders()
+        self.folders = folders if folders is not None else [""]
         
     def get_folders(self):
-        """Get subdirectories in the tool_specs directory."""
+        """Get folders from the unified JSON file."""
         folders = []
         try:
-            logging.debug(f"TOOL_SPECS_DIR: {TOOL_SPECS_DIR}")
-            for item in os.listdir(TOOL_SPECS_DIR):
-                item_path = os.path.join(TOOL_SPECS_DIR, item)
-                if os.path.isdir(item_path):
-                    logging.debug(f"Adding folder: {item}")
-                    folders.append(item)
-            logging.debug(f"Final folder list: {folders}")
+            with open(TOOL_STORAGE_FILE, "r") as f:
+                tools = json.load(f)
+                folders = list(tools.keys())
         except Exception as e:
-            logging.error(f"Error accessing TOOL_SPECS_DIR: {e}")
+            logging.error(f"Error accessing TOOL_STORAGE_FILE: {e}")
         return folders
         
     def compose(self) -> ComposeResult:
@@ -45,15 +42,20 @@ class SaveFileDialog(ModalScreen):
         for folder in self.folders:
             options.append((folder, folder))
 
+        # Ensure the Select widget is initialized with a default value
+        select = Select(
+            options=options,
+            value="placeholder",
+            id="folder-select",
+            allow_blank=True  # Ensure blank values are allowed
+        )
+        yield select
+
         yield Container(
             Static("Save Tool Specification", classes="editor-title"),
             Horizontal(
                 Label("Folder:"),
-                Select(
-                    options=options,
-                    value="placeholder",
-                    id="folder-select"
-                ),
+                select,
                 Button("New Folder", id="new-folder-btn"),
                 classes="form-row save-form-row"
             ),
@@ -133,8 +135,8 @@ class SaveFileDialog(ModalScreen):
         if not filename.endswith(".json"):
             filename += ".json"
         
-        # Construct the full path
-        folder_path = os.path.join(TOOL_SPECS_DIR, folder)
+        # Construct the full path using TOOL_STORAGE_FILE
+        folder_path = os.path.join(os.path.dirname(TOOL_STORAGE_FILE), folder)
         filepath = os.path.join(folder_path, filename)
         
         # Create directory if it doesn't exist
@@ -198,7 +200,7 @@ class NewFolderDialog(ModalScreen):
                     lambda _: None
                 )
                 return
-            folder_path = os.path.join(TOOL_SPECS_DIR, folder_name)
+            folder_path = os.path.join(os.path.dirname(TOOL_STORAGE_FILE), folder_name)
             os.makedirs(folder_path, exist_ok=True)
             self.dismiss(folder_name)
         elif button_id == "cancel-folder-btn":
