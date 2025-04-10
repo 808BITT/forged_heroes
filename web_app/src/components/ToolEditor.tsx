@@ -9,6 +9,9 @@ import { Label } from "./ui/label.tsx";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Switch } from "./ui/switch";
 import { Textarea } from "./ui/textarea.tsx";
+import toolsApi from "../services/apiService";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { solarizedlight } from "react-syntax-highlighter/dist/esm/styles/prism";
 
 const PARAMETER_TYPES = ["string", "number", "boolean", "object", "array"];
 
@@ -308,6 +311,7 @@ export default function ToolEditor() {
                                                     handleUpdateParameter(param.id, 'name', e.target.value)
                                                 }
                                                 placeholder="e.g. location"
+                                                className={!param.name ? "border-red-500" : ""}
                                             />
                                         </div>
                                         
@@ -401,9 +405,9 @@ export default function ToolEditor() {
                         </div>
 
                         <div className="rounded-md border bg-muted/50 p-4">
-                            <pre className="overflow-auto text-xs text-muted-foreground text-left max-h-[500px] whitespace-pre-wrap">
+                            <SyntaxHighlighter language="json" style={solarizedlight} showLineNumbers>
                                 {jsonPreview || "Complete the form to generate JSON"}
-                            </pre>
+                            </SyntaxHighlighter>
                         </div>
                         
                         <p className="text-sm text-muted-foreground mt-2">
