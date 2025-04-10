@@ -134,34 +134,26 @@ app.delete('/api/tools/:id', async (req, res) => {
   }
 });
 
-// Add a new route to parse function signature
+// New route to parse function signature
 app.post('/api/parseFunctionSignature', async (req, res) => {
-  const { signature } = req.body;
-  const functionRegex = /function\s+(\w+)\s*\(([^)]*)\)/;
-  const match = signature.match(functionRegex);
-
-  if (!match) {
-    return res.status(400).json({ message: 'Invalid function signature' });
+  try {
+    const { signature } = req.body;
+    const parsedData = parseFunctionSignature(signature);
+    res.json(parsedData);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to parse function signature' });
   }
-
-  const name = match[1];
-  const params = match[2].split(',').map(param => {
-    const [paramName, paramType] = param.trim().split(':');
-    return {
-      name: paramName.trim(),
-      type: paramType ? paramType.trim() : 'string'
-    };
-  });
-
-  res.json({ name, params });
 });
 
-// Add a new route to generate description
+// New route to generate description using light LLM
 app.post('/api/generateDescription', async (req, res) => {
-  const { name } = req.body;
-  // Placeholder for LLM call
-  const description = `This function ${name} is used to...`;
-  res.json({ description });
+  try {
+    const { signature } = req.body;
+    const description = await generateDescription(signature);
+    res.json({ description });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to generate description' });
+  }
 });
 
 // Start server

@@ -32,6 +32,7 @@ export default function ToolEditor() {
     const [copied, setCopied] = useState(false);
     const [functionSignature, setFunctionSignature] = useState("");
     const [highlightedFields, setHighlightedFields] = useState<string[]>([]);
+    const [errors, setErrors] = useState<string[]>([]);
 
     // Load tool data if editing
     useEffect(() => {
@@ -110,11 +111,21 @@ export default function ToolEditor() {
         setParameters(parameters.filter(p => p.id !== id));
     };
 
+    const validateForm = () => {
+        const newErrors: string[] = [];
+        if (!name.trim()) newErrors.push("Tool name is required");
+        if (!description.trim()) newErrors.push("Tool description is required");
+        parameters.forEach((param, index) => {
+            if (!param.name.trim()) newErrors.push(`Parameter ${index + 1} name is required`);
+            if (!param.type.trim()) newErrors.push(`Parameter ${index + 1} type is required`);
+            if (!param.description.trim()) newErrors.push(`Parameter ${index + 1} description is required`);
+        });
+        setErrors(newErrors);
+        return newErrors.length === 0;
+    };
+
     const handleSave = () => {
-        if (!name.trim()) {
-            alert("Tool name is required");
-            return;
-        }
+        if (!validateForm()) return;
 
         const toolData = {
             name,
@@ -209,6 +220,17 @@ export default function ToolEditor() {
                     </Button>
                 </div>
             </div>
+
+            {errors.length > 0 && (
+                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                    <strong className="font-bold">Error:</strong>
+                    <ul className="mt-2">
+                        {errors.map((error, index) => (
+                            <li key={index}>{error}</li>
+                        ))}
+                    </ul>
+                </div>
+            )}
 
             <div className="grid gap-8 lg:grid-cols-2">
                 {/* Tool Configuration Form */}
