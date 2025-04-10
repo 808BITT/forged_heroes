@@ -1,4 +1,4 @@
-from internal.tool.parameter import ToolParams
+from internal.tool.core.parameter import ToolParams
 
 
 class Tool:

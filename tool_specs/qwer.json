@@ -1,0 +1,19 @@
+{
+  "type": "function",
+  "function": {
+    "name": "qwer",
+    "description": "qwer",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "qwer": {
+          "type": "string",
+          "description": "qwer"
+        }
+      },
+      "required": [
+        "qwer"
+      ]
+    }
+  }
+}

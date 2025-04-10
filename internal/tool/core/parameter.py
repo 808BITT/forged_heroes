@@ -1,4 +1,4 @@
-from internal.tool.property import ToolProperty
+from internal.tool.core.property import ToolProperty
 
 class ToolParams:
     def __init__(self, type: str = "object", properties: dict = None, required: list = None):

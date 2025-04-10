@@ -1,0 +1,11 @@
+2025-04-09 21:57:22,134 - root - INFO - logger_config.py:48 - Logging initialized
+2025-04-09 21:57:22,243 - internal.tui.constants - INFO - constants.py:28 - Critical directories verified: /home/bobbitt/projects/personal/forged_heroes/tool_specs, /home/bobbitt/projects/personal/forged_heroes/logs
+2025-04-09 21:57:22,263 - root - INFO - main.py:16 - Application starting
+2025-04-09 21:57:22,265 - internal.tui.app - INFO - app.py:185 - Starting TUI application
+2025-04-09 21:57:22,266 - asyncio - DEBUG - selector_events.py:64 - Using selector: EpollSelector
+2025-04-09 21:57:22,298 - internal.tui.app - INFO - app.py:64 - Application UI mounted
+2025-04-09 21:57:25,047 - internal.tui.app - INFO - app.py:69 - Creating new tool
+2025-04-09 21:57:31,965 - internal.tui.screens.tool_wizard - DEBUG - tool_wizard.py:245 - Found folders: ['cli']
+2025-04-09 21:57:42,715 - internal.tui.app - INFO - app.py:176 - Quitting application
+2025-04-09 21:57:42,715 - internal.tui.app - INFO - app.py:190 - Stopping TUI application
+2025-04-09 21:57:42,922 - root - INFO - main.py:32 - Application exited normally

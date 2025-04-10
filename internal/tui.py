@@ -161,7 +161,13 @@ class SaveFileDialog(ModalScreen):
         if folder_name:
             # Update the folder select with the new folder
             select = self.query_one("#folder-select")
-            select.add_option((folder_name, folder_name))
+            # Get the current options
+            current_options = select.options
+            # Add the new folder to the options
+            new_option = (folder_name, folder_name)
+            new_options = current_options + [new_option]
+            # Update the options
+            select.set_options(new_options)
             select.value = folder_name
     
     def save_file(self):

@@ -7,14 +7,8 @@ folder_options = [("Folder 1", "folder1"), ("Folder 2", "folder2")]
 folder_select = Select(
     id="folder-select",
     options=[("Choose a folder", "placeholder")] + folder_options,  # Use placeholder instead of empty string
+    allow_blank=True
 )
-
-# Alternatively, you can use allow_blank=True if you want to allow empty values
-# folder_select = Select(
-#     id="folder-select",
-#     options=folder_options,  # Make sure this is populated before mounting
-#     allow_blank=True  # Add this line to allow empty values
-# )
 
 def on_mount(self) -> None:
     """Handle the mount event."""

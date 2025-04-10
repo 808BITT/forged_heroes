@@ -4,6 +4,7 @@ Tool Wizard screen for guided tool specification creation and editing.
 
 import os
 import json
+import logging
 from textual.screen import ModalScreen
 from textual.widgets import Button, Static, Input, Label, DirectoryTree
 from textual.containers import Container, Horizontal, Vertical
@@ -13,6 +14,9 @@ from textual.app import ComposeResult
 from internal.tui.screens.property_editor import PropertyEditor
 from internal.tui.dialogs.error import ErrorDialog
 from internal.tui.dialogs.file import SaveFileDialog
+
+# Configure logging
+logger = logging.getLogger(__name__)
 
 class ToolWizard(ModalScreen):
     """A wizard-based screen for creating or editing tool specifications."""
@@ -230,17 +234,41 @@ class ToolWizard(ModalScreen):
                     # Important: Pop this screen first to prevent freezing
                     self.app.pop_screen()
                 
+                # Get all available folders
+                from internal.tui.constants import TOOL_SPECS_DIR
+                folders = []
+                try:
+                    for item in os.listdir(TOOL_SPECS_DIR):
+                        item_path = os.path.join(TOOL_SPECS_DIR, item)
+                        if os.path.isdir(item_path):
+                            folders.append(item)
+                    logger.debug(f"Found folders: {folders}")
+                except Exception as e:
+                    logger.error(f"Error getting folders: {e}")
+                    
+                # Pass explicit folders list to avoid directory scan issues
                 self.app.push_screen(
-                    SaveFileDialog(json_content, tool_name),
+                    SaveFileDialog(json_content, tool_name, folders=folders),
                     handle_save_result
                 )
             else:
                 # For existing files, save directly
-                with open(self.filepath, "w") as f:
-                    f.write(json_content)
-                self.app.pop_screen()
-                # Refresh the directory tree
-                self.app.query_one(DirectoryTree).reload()
+                try:
+                    with open(self.filepath, "w") as f:
+                        f.write(json_content)
+                    self.app.pop_screen()
+                    
+                    # Refresh the directory tree
+                    try:
+                        self.app.query_one(DirectoryTree).reload()
+                    except Exception:
+                        # Directory tree might not be available, ignore if it fails
+                        pass
+                except Exception as e:
+                    self.app.push_screen(
+                        ErrorDialog(f"Error saving file: {e}"),
+                        lambda _: None
+                    )
         except Exception as e:
             self.app.push_screen(
                 ErrorDialog(f"Error generating JSON: {e}"),

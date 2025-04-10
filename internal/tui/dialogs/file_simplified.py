@@ -1,5 +1,5 @@
 """
-File-related dialog components.
+Simplified file dialog components.
 """
 
 import os
@@ -11,36 +11,36 @@ from textual.app import ComposeResult
 
 from internal.tui.constants import TOOL_SPECS_DIR
 from internal.tui.dialogs.error import ErrorDialog
+from internal.tui.dialogs.input_dialog import SimpleInputDialog
 
 # Configure logging
-logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
-class SaveFileDialog(ModalScreen):
-    """Dialog for saving a new file."""
+class SimplifiedSaveFileDialog(ModalScreen):
+    """Dialog for saving a new file - simplified version."""
     
     def __init__(self, content, tool_name="", folders=None):
         super().__init__()
         self.content = content
         self.tool_name = tool_name
-        self.folders = folders if folders is not None else self.get_folders()
+        # Get folders if not provided
+        self.folders = folders if folders is not None else self._get_folders()
+        logger.debug(f"SimplifiedSaveFileDialog initialized with {len(self.folders)} folders")
         
-    def get_folders(self):
+    def _get_folders(self):
         """Get subdirectories in the tool_specs directory."""
         folders = []
         try:
-            logging.debug(f"TOOL_SPECS_DIR: {TOOL_SPECS_DIR}")
             for item in os.listdir(TOOL_SPECS_DIR):
                 item_path = os.path.join(TOOL_SPECS_DIR, item)
                 if os.path.isdir(item_path):
-                    logging.debug(f"Adding folder: {item}")
                     folders.append(item)
-            logging.debug(f"Final folder list: {folders}")
         except Exception as e:
-            logging.error(f"Error accessing TOOL_SPECS_DIR: {e}")
+            logger.error(f"Error accessing TOOL_SPECS_DIR: {e}")
         return folders
         
     def compose(self) -> ComposeResult:
-        # Prepare select options - add a placeholder and the folders
+        # Prepare select options with placeholder
         options = [("Choose a folder", "placeholder")]
         for folder in self.folders:
             options.append((folder, folder))
@@ -76,71 +76,85 @@ class SaveFileDialog(ModalScreen):
         button_id = event.button.id
         
         if button_id == "new-folder-btn":
-            self.app.push_screen(
-                NewFolderDialog(),
-                self.handle_new_folder
-            )
+            self._prompt_for_new_folder()
         elif button_id == "save-file-btn":
-            self.save_file()
+            self._save_file()
         elif button_id == "cancel-file-btn":
             self.dismiss(False)
+    
+    def _prompt_for_new_folder(self):
+        """Show dialog to create a new folder."""
+        self.app.push_screen(
+            SimpleInputDialog("Enter folder name:", "Create Folder"),
+            self._handle_new_folder
+        )
             
-    def handle_new_folder(self, folder_name):
+    def _handle_new_folder(self, folder_name):
         """Handle result from new folder dialog."""
-        if folder_name:
-            # Get the Select widget
+        if not folder_name:
+            return
+            
+        # Create the folder
+        try:
+            folder_path = os.path.join(TOOL_SPECS_DIR, folder_name)
+            os.makedirs(folder_path, exist_ok=True)
+            
+            # Get the Select widget and update options
             select = self.query_one("#folder-select", Select)
-
-            # Create new options including the new folder
-            new_options = [("Choose a folder", "placeholder")]  # Placeholder option
-
-            # Add the new folder as the first real option
+            
+            # Build new options list
+            new_options = [("Choose a folder", "placeholder")]
             new_options.append((folder_name, folder_name))
-
-            # Add existing folders (except the placeholder)
-            # First convert options to list to avoid 'Select' object has no attribute 'options'
-            current_options = list(select.options)
-            for label, value in current_options:
+            
+            # Add existing folders
+            for label, value in list(select.options):
                 if value != "placeholder" and value != folder_name:
                     new_options.append((label, value))
-
-            # Use set_options() instead of direct property assignment
+                    
+            # Update the widget
             select.set_options(new_options)
             select.value = folder_name
+            logger.info(f"Created new folder: {folder_name}")
+            
+        except Exception as e:
+            logger.error(f"Error creating folder: {e}")
+            self.app.push_screen(
+                ErrorDialog(f"Error creating folder: {e}"),
+                lambda _: None
+            )
     
-    def save_file(self):
+    def _save_file(self):
         """Save the file with proper name handling."""
         folder = self.query_one("#folder-select").value
         
-        # Ensure a valid folder is selected
+        # Validate folder selection
         if folder == "placeholder":
             self.app.push_screen(
                 ErrorDialog("Please select a valid folder."),
                 lambda _: None
             )
             return
-        
+            
         filename = self.query_one("#filename-input").value
         
+        # Validate filename
         if not filename:
             self.app.push_screen(
                 ErrorDialog("Filename cannot be empty."),
                 lambda _: None
             )
             return
-        
-        # Add .json extension if not present
+                
+        # Add .json extension if needed
         if not filename.endswith(".json"):
             filename += ".json"
-        
-        # Construct the full path
+                
+        # Construct path and create directory
         folder_path = os.path.join(TOOL_SPECS_DIR, folder)
         filepath = os.path.join(folder_path, filename)
-        
-        # Create directory if it doesn't exist
         os.makedirs(folder_path, exist_ok=True)
         
-        # Check if file already exists and auto-increment if needed
+        # Handle file name conflicts
         base_name, ext = os.path.splitext(filename)
         counter = 1
         while os.path.exists(filepath):
@@ -149,57 +163,23 @@ class SaveFileDialog(ModalScreen):
             counter += 1
         
         try:
-            # Save the file
+            # Save and dismiss
             with open(filepath, "w") as f:
                 f.write(self.content)
+                
+            logger.info(f"File saved successfully: {filepath}")
             
-            # Try to refresh the directory tree if it exists
+            # Try to refresh the directory tree
             try:
                 self.app.query_one(DirectoryTree).reload()
             except Exception:
-                # Directory tree might not be available, ignore if it fails
+                # Directory tree might not exist
                 pass
                 
             self.dismiss(True)
         except Exception as e:
-            # Show error if file saving fails
+            logger.error(f"Error saving file: {e}")
             self.app.push_screen(
-                ErrorDialog(f"Failed to save file: {e}"),
+                ErrorDialog(f"Error saving file: {e}"),
                 lambda _: None
             )
-
-
-class NewFolderDialog(ModalScreen):
-    """Dialog for creating a new folder."""
-    
-    def compose(self) -> ComposeResult:
-        yield Container(
-            Static("Create New Folder", classes="editor-title"),
-            Horizontal(
-                Label("Folder Name:"),
-                Input(placeholder="folder_name", id="folder-name-input"),
-                classes="form-row"
-            ),
-            Horizontal(
-                Button("Create", id="create-folder-btn", variant="primary"),
-                Button("Cancel", id="cancel-folder-btn"),
-                classes="dialog-buttons"
-            ),
-            classes="new-folder-dialog"
-        )
-    
-    def on_button_pressed(self, event: Button.Pressed) -> None:
-        button_id = event.button.id
-        if button_id == "create-folder-btn":
-            folder_name = self.query_one("#folder-name-input").value
-            if not folder_name:
-                self.app.push_screen(
-                    ErrorDialog("Folder name cannot be empty."),
-                    lambda _: None
-                )
-                return
-            folder_path = os.path.join(TOOL_SPECS_DIR, folder_name)
-            os.makedirs(folder_path, exist_ok=True)
-            self.dismiss(folder_name)
-        elif button_id == "cancel-folder-btn":
-            self.dismiss(None)
