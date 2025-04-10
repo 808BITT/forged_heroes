@@ -1,6 +1,6 @@
 import unittest
-from internal.tool.tool import Tool
-from internal.tool.parameter import ToolParams, ToolProperty
+from internal.tool import Tool
+from internal.tool import ToolParams, ToolProperty
 
 class TestToolInitialization(unittest.TestCase):
     # ...existing code...
@@ -27,6 +27,15 @@ class TestToolInitialization(unittest.TestCase):
 
     def test_tool_execution_with_missing_parameters(self):
         tool = Tool(name="example_tool", description="An example tool")
+        tool.parameters.add_property(
+            "example_param",
+            ToolProperty(
+                name="example_param",
+                type="string",
+                description="An example parameter",
+                required=True
+            )
+        )
         with self.assertRaises(ValueError):
             tool.execute({})  # Missing required parameters
 

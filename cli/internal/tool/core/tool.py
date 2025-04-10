@@ -13,3 +13,12 @@ class Tool:
 
     def __str__(self):
         return f"{self.name}: {self.description}"
+
+    def execute(self, params: dict):
+        # Validate required parameters
+        for param_name in self.parameters.required:
+            if param_name not in params:
+                raise ValueError(f"Missing required parameter: {param_name}")
+
+        # Example execution logic (to be replaced with actual logic)
+        return f"Executed {self.name} with parameters: {params}"

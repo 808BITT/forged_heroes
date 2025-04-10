@@ -14,6 +14,8 @@ class ToolParams:
         }
 
     def add_property(self, name: str, prop: ToolProperty):
+        print(f"Adding property: {name}, Required: {prop.required}")
         self.properties[name] = prop
         if prop.required:
             self.required.append(name)
+        print(f"Current required list: {self.required}")
