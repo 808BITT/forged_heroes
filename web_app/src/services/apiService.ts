@@ -59,6 +59,30 @@ export const toolsApi = {
     });
     return handleResponse(response);
   },
+
+  // Add a new endpoint to parse function signature
+  parseFunctionSignature: async (signature: string): Promise<{ name: string, params: { name: string, type: string }[] }> => {
+    const response = await fetch(`${API_URL}/api/parseFunctionSignature`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ signature }),
+    });
+    return handleResponse(response);
+  },
+
+  // Add a new endpoint to generate description
+  generateDescription: async (name: string): Promise<string> => {
+    const response = await fetch(`${API_URL}/api/generateDescription`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ name }),
+    });
+    return handleResponse(response);
+  },
 };
 
 export default toolsApi;

@@ -67,3 +67,30 @@ export const loadToolSpecs = async (): Promise<Record<string, Tool>> => {
         return {};
     }
 };
+
+// Function to parse function signature and extract name, parameters, and their types
+export const parseFunctionSignature = (signature: string) => {
+    const functionRegex = /function\s+(\w+)\s*\(([^)]*)\)/;
+    const match = signature.match(functionRegex);
+
+    if (!match) {
+        return null;
+    }
+
+    const name = match[1];
+    const params = match[2].split(',').map(param => {
+        const [paramName, paramType] = param.trim().split(':');
+        return {
+            name: paramName.trim(),
+            type: paramType ? paramType.trim() : 'string'
+        };
+    });
+
+    return { name, params };
+};
+
+// Function to generate description using a light LLM
+export const generateDescription = async (name: string) => {
+    // Placeholder for LLM call
+    return `This function ${name} is used to...`;
+};

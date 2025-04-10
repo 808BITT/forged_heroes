@@ -12,6 +12,31 @@ import { Textarea } from "./ui/textarea.tsx";
 
 const PARAMETER_TYPES = ["string", "number", "boolean", "object", "array"];
 
+function parseFunctionSignature(signature: string) {
+    const functionRegex = /function\s+(\w+)\s*\(([^)]*)\)/;
+    const match = signature.match(functionRegex);
+
+    if (!match) {
+        return null;
+    }
+
+    const name = match[1];
+    const params = match[2].split(',').map(param => {
+        const [paramName, paramType] = param.trim().split(':');
+        return {
+            name: paramName.trim(),
+            type: paramType ? paramType.trim() : 'string'
+        };
+    });
+
+    return { name, params };
+}
+
+async function generateDescription(name: string) {
+    // Placeholder for LLM call
+    return `This function ${name} is used to...`;
+}
+
 export default function ToolEditor() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
@@ -27,6 +52,7 @@ export default function ToolEditor() {
     const [parameters, setParameters] = useState<Parameter[]>([]);
     const [jsonPreview, setJsonPreview] = useState("");
     const [copied, setCopied] = useState(false);
+    const [functionSignature, setFunctionSignature] = useState("");
 
     // Load tool data if editing
     useEffect(() => {
@@ -145,6 +171,25 @@ export default function ToolEditor() {
         }
     };
 
+    const handleFunctionSignatureChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const signature = e.target.value;
+        setFunctionSignature(signature);
+
+        const parsed = parseFunctionSignature(signature);
+        if (parsed) {
+            setName(parsed.name);
+            setParameters(parsed.params.map((param, index) => ({
+                id: `p${index + 1}`,
+                name: param.name,
+                type: param.type,
+                description: "",
+                required: true
+            })));
+            const desc = await generateDescription(parsed.name);
+            setDescription(desc);
+        }
+    };
+
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -188,6 +233,16 @@ export default function ToolEditor() {
                     animate={{ opacity: 1, x: 0 }}
                     className="space-y-6"
                 >
+                    <div className="space-y-2">
+                        <Label htmlFor="function-signature">Function Signature</Label>
+                        <Input
+                            id="function-signature"
+                            placeholder="Enter function signature..."
+                            value={functionSignature}
+                            onChange={handleFunctionSignatureChange}
+                        />
+                    </div>
+
                     <div className="space-y-2">
                         <Label htmlFor="name">Tool Name</Label>
                         <Input
