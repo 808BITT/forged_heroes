@@ -9,36 +9,11 @@ import { Label } from "./ui/label.tsx";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Switch } from "./ui/switch";
 import { Textarea } from "./ui/textarea.tsx";
-import toolsApi from "../services/apiService";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { solarizedlight } from "react-syntax-highlighter/dist/esm/styles/prism";
+
+// New imports for LLM and API services
+import { parseFunctionSignature, generateDescription } from "../services/toolSpecService";
 
 const PARAMETER_TYPES = ["string", "number", "boolean", "object", "array"];
-
-function parseFunctionSignature(signature: string) {
-    const functionRegex = /function\s+(\w+)\s*\(([^)]*)\)/;
-    const match = signature.match(functionRegex);
-
-    if (!match) {
-        return null;
-    }
-
-    const name = match[1];
-    const params = match[2].split(',').map(param => {
-        const [paramName, paramType] = param.trim().split(':');
-        return {
-            name: paramName.trim(),
-            type: paramType ? paramType.trim() : 'string'
-        };
-    });
-
-    return { name, params };
-}
-
-async function generateDescription(name: string) {
-    // Placeholder for LLM call
-    return `This function ${name} is used to...`;
-}
 
 export default function ToolEditor() {
     const { id } = useParams<{ id: string }>();
@@ -56,6 +31,7 @@ export default function ToolEditor() {
     const [jsonPreview, setJsonPreview] = useState("");
     const [copied, setCopied] = useState(false);
     const [functionSignature, setFunctionSignature] = useState("");
+    const [highlightedFields, setHighlightedFields] = useState<string[]>([]);
 
     // Load tool data if editing
     useEffect(() => {
@@ -174,22 +150,27 @@ export default function ToolEditor() {
         }
     };
 
-    const handleFunctionSignatureChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFunctionSignatureChange = async (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const signature = e.target.value;
         setFunctionSignature(signature);
 
-        const parsed = parseFunctionSignature(signature);
-        if (parsed) {
-            setName(parsed.name);
-            setParameters(parsed.params.map((param, index) => ({
-                id: `p${index + 1}`,
-                name: param.name,
-                type: param.type,
-                description: "",
-                required: true
-            })));
-            const desc = await generateDescription(parsed.name);
-            setDescription(desc);
+        if (signature.trim()) {
+            const { name, parameters } = parseFunctionSignature(signature);
+            setName(name);
+            setParameters(parameters);
+
+            const descriptionStart = await generateDescription(signature);
+            setDescription(descriptionStart);
+
+            const fieldsToHighlight = [];
+            if (!name) fieldsToHighlight.push("name");
+            if (!descriptionStart) fieldsToHighlight.push("description");
+            parameters.forEach((param, index) => {
+                if (!param.name) fieldsToHighlight.push(`param-name-${param.id}`);
+                if (!param.type) fieldsToHighlight.push(`param-type-${param.id}`);
+                if (!param.description) fieldsToHighlight.push(`param-desc-${param.id}`);
+            });
+            setHighlightedFields(fieldsToHighlight);
         }
     };
 
@@ -238,9 +219,10 @@ export default function ToolEditor() {
                 >
                     <div className="space-y-2">
                         <Label htmlFor="function-signature">Function Signature</Label>
-                        <Input
+                        <Textarea
                             id="function-signature"
-                            placeholder="Enter function signature..."
+                            placeholder="Paste function signature here..."
+                            rows={4}
                             value={functionSignature}
                             onChange={handleFunctionSignatureChange}
                         />
@@ -253,6 +235,7 @@ export default function ToolEditor() {
                             placeholder="Enter tool name..."
                             value={name}
                             onChange={(e) => setName(e.target.value)}
+                            className={highlightedFields.includes("name") ? "border-red-500" : ""}
                         />
                     </div>
 
@@ -264,6 +247,7 @@ export default function ToolEditor() {
                             rows={4}
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
+                            className={highlightedFields.includes("description") ? "border-red-500" : ""}
                         />
                     </div>
 
@@ -311,7 +295,7 @@ export default function ToolEditor() {
                                                     handleUpdateParameter(param.id, 'name', e.target.value)
                                                 }
                                                 placeholder="e.g. location"
-                                                className={!param.name ? "border-red-500" : ""}
+                                                className={highlightedFields.includes(`param-name-${param.id}`) ? "border-red-500" : ""}
                                             />
                                         </div>
                                         
@@ -347,6 +331,7 @@ export default function ToolEditor() {
                                                     handleUpdateParameter(param.id, 'description', e.target.value)
                                                 }
                                                 placeholder="Describe the parameter"
+                                                className={highlightedFields.includes(`param-desc-${param.id}`) ? "border-red-500" : ""}
                                             />
                                         </div>
                                         
@@ -405,9 +390,9 @@ export default function ToolEditor() {
                         </div>
 
                         <div className="rounded-md border bg-muted/50 p-4">
-                            <SyntaxHighlighter language="json" style={solarizedlight} showLineNumbers>
+                            <pre className="overflow-auto text-xs text-muted-foreground text-left max-h-[500px] whitespace-pre-wrap">
                                 {jsonPreview || "Complete the form to generate JSON"}
-                            </SyntaxHighlighter>
+                            </pre>
                         </div>
                         
                         <p className="text-sm text-muted-foreground mt-2">
