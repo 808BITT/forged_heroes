@@ -12,7 +12,7 @@ import logging
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Unified JSON file for tool specifications
-TOOL_STORAGE_FILE = os.path.join(BASE_DIR, "data", "tools.json")
+TOOL_STORAGE_FILE = os.path.join(os.path.dirname(os.path.dirname(BASE_DIR)), "data", "tools.json")
 
 # Logger setup
 logger = logging.getLogger(__name__)

@@ -1,1 +1,36 @@
-{}
+{
+  "70130d86-48fd-429e-9e1f-ec774cc2ca73": {
+    "name": "test",
+    "description": "This is a test tool definition",
+    "category": "CLI",
+    "parameters": [
+      {
+        "id": "p1744306212040",
+        "name": "param1",
+        "type": "string",
+        "description": "Example string parameter",
+        "required": false
+      }
+    ],
+    "status": "active",
+    "lastModified": "2025-04-10T17:31:04.692Z",
+    "id": "70130d86-48fd-429e-9e1f-ec774cc2ca73"
+  },
+  "687a07eb-e606-4a82-a591-da57a105a6be": {
+    "name": "test2",
+    "description": "Another test",
+    "category": "CLI",
+    "parameters": [
+      {
+        "id": "p1744306288693",
+        "name": "example",
+        "type": "string",
+        "description": "asdfasdf",
+        "required": true
+      }
+    ],
+    "status": "active",
+    "lastModified": "2025-04-10T17:31:52.784Z",
+    "id": "687a07eb-e606-4a82-a591-da57a105a6be"
+  }
+}

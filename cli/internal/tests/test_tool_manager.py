@@ -14,7 +14,7 @@ class TestToolManager(unittest.TestCase):
         os.makedirs(self.test_data_dir, exist_ok=True)
         
         # Create a test tools.json file
-        self.test_tools_file = os.path.join(self.test_data_dir, "tools.json")
+        self.test_tools_file = os.path.join(os.path.dirname(os.path.dirname(self.test_dir)), "data", "tools.json")
         self.test_tools = {
             "test_tool1": {
                 "type": "function",

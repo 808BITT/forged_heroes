@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 # Define the unified tool storage file
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-TOOL_STORAGE_FILE = os.path.join(BASE_DIR, "data", "tools.json")
+TOOL_STORAGE_FILE = os.path.join(os.path.dirname(os.path.dirname(BASE_DIR)), "data", "tools.json")
 
 class ToolManager:
     """Manager for tool operations."""

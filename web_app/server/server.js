@@ -13,7 +13,7 @@ app.use(cors());
 app.use(express.json());
 
 // Storage path for tools data
-const TOOLS_FILE = path.join(__dirname, 'data', 'tools.json');
+const TOOLS_FILE = path.join(__dirname, '..', '..', 'data', 'tools.json');
 
 // Ensure data directory exists
 async function ensureDataDir() {
