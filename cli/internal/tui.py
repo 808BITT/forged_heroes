@@ -1,5 +1,5 @@
 from textual.app import App, ComposeResult
-from textual.widgets import Header, Footer, DirectoryTree, Static, Input, Button, TextArea, Select, Label, Switch, RadioSet, RadioButton
+from textual.widgets import Header, Footer, DirectoryTree, Static, Input, Button, TextArea, Select, Label, Switch
 from textual.containers import Container, Horizontal, Vertical
 from textual.binding import Binding
 from textual.screen import ModalScreen, Screen
@@ -7,10 +7,6 @@ from rich.syntax import Syntax
 import os
 import json
 from pathlib import Path
-
-from internal.tool.tool import Tool
-from internal.tool.parameter import ToolParams
-from internal.tool.property import ToolProperty
 
 # Root directory for tool specifications
 TOOL_SPECS_DIR = "tool_specs"

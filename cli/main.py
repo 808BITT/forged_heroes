@@ -1,5 +1,4 @@
 #!./.venv/bin/python
-import os
 import traceback
 import sys
 from internal.logger_config import setup_logging
