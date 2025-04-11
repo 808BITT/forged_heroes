@@ -92,6 +92,21 @@ export default function ToolEditor() {
     };
 
     // Generate and update JSON preview
+    const convertDefaultValue = (type: string, defaultValue: string): any => {
+        if (defaultValue === '') return undefined;
+        
+        switch (type) {
+            case 'number':
+                return Number(defaultValue);
+            case 'integer':
+                return parseInt(defaultValue, 10);
+            case 'boolean':
+                return defaultValue === 'true';
+            default:
+                return defaultValue;
+        }
+    };
+
     useEffect(() => {
         if (!name) return;
         
@@ -129,16 +144,9 @@ export default function ToolEditor() {
                                 paramSpec.maximum = Number(param.maximum);
                             }
                             
-                            // Add default value if provided
+                            // Add default value if provided with proper type conversion
                             if (param.default !== '') {
-                                // Convert default value to appropriate type
-                                if (param.type === 'number' || param.type === 'integer') {
-                                    paramSpec.default = Number(param.default);
-                                } else if (param.type === 'boolean') {
-                                    paramSpec.default = param.default === 'true';
-                                } else {
-                                    paramSpec.default = param.default;
-                                }
+                                paramSpec.default = convertDefaultValue(param.type, param.default || '');
                             }
                             
                             // Handle array items
@@ -280,32 +288,104 @@ export default function ToolEditor() {
         const newErrors: string[] = [];
         if (!name.trim()) newErrors.push("Tool name is required");
         if (!description.trim()) newErrors.push("Tool description is required");
-        parameters.forEach((param, index) => {
-            if (!param.name.trim()) newErrors.push(`Parameter ${index + 1} name is required`);
-            if (!param.type.trim()) newErrors.push(`Parameter ${index + 1} type is required`);
-            if (!param.description.trim()) newErrors.push(`Parameter ${index + 1} description is required`);
+        
+        parameters.forEach((param, _index) => {
+            const paramDisplay = `Parameter ${_index + 1}${param.name ? ` (${param.name})` : ''}`;
             
-            // Validate type-specific fields
-            if (param.type === 'enum' && (!param.enumValues || param.enumValues.length === 0)) {
-                newErrors.push(`Parameter ${index + 1} (${param.name || 'unnamed'}) must have at least one enum value`);
-            }
+            // Basic validation
+            if (!param.name.trim()) newErrors.push(`${paramDisplay} name is required`);
+            if (!param.type.trim()) newErrors.push(`${paramDisplay} type is required`);
+            if (!param.description.trim()) newErrors.push(`${paramDisplay} description is required`);
             
-            if (param.type === 'array' && !param.arrayItemType) {
-                newErrors.push(`Parameter ${index + 1} (${param.name || 'unnamed'}) must specify array item type`);
-            }
-            
-            // Validate min/max for numbers
-            if ((param.type === 'number' || param.type === 'integer') && 
-                param.minimum !== '' && param.maximum !== '' && 
-                Number(param.minimum) > Number(param.maximum)) {
-                newErrors.push(`Parameter ${index + 1} (${param.name || 'unnamed'}) minimum value cannot be greater than maximum`);
+            // Type-specific validation
+            switch (param.type) {
+                case 'enum':
+                    if (!param.enumValues || param.enumValues.length === 0) {
+                        newErrors.push(`${paramDisplay} must have at least one enum value`);
+                    }
+                    break;
+                    
+                case 'array':
+                    if (!param.arrayItemType) {
+                        newErrors.push(`${paramDisplay} must specify array item type`);
+                    }
+                    break;
+                    
+                case 'object':
+                    try {
+                        if (!param.objectProperties || Object.keys(param.objectProperties).length === 0) {
+                            newErrors.push(`${paramDisplay} must have at least one property defined`);
+                        }
+                    } catch (error) {
+                        newErrors.push(`${paramDisplay} has invalid object properties format`);
+                    }
+                    break;
+                    
+                case 'number':
+                case 'integer':
+                    if (param.minimum !== '' && param.maximum !== '' && 
+                        Number(param.minimum) > Number(param.maximum)) {
+                        newErrors.push(`${paramDisplay} minimum value cannot be greater than maximum`);
+                    }
+                    
+                    if (param.default !== '') {
+                        const defaultNum = Number(param.default);
+                        if (isNaN(defaultNum)) {
+                            newErrors.push(`${paramDisplay} default value must be a valid ${param.type}`);
+                        } else {
+                            // Check if default is within min/max range if specified
+                            if (param.minimum !== '' && defaultNum < Number(param.minimum)) {
+                                newErrors.push(`${paramDisplay} default value cannot be less than minimum`);
+                            }
+                            if (param.maximum !== '' && defaultNum > Number(param.maximum)) {
+                                newErrors.push(`${paramDisplay} default value cannot be greater than maximum`);
+                            }
+                            // For integer type, ensure the default is an integer
+                            if (param.type === 'integer' && !Number.isInteger(defaultNum)) {
+                                newErrors.push(`${paramDisplay} default value must be an integer`);
+                            }
+                        }
+                    }
+                    break;
+                    
+                case 'boolean':
+                    if (param.default !== '' && param.default !== 'true' && param.default !== 'false') {
+                        newErrors.push(`${paramDisplay} default value must be either 'true' or 'false'`);
+                    }
+                    break;
             }
         });
+        
+        // Highlight UI elements with errors
+        const fieldsToHighlight = [];
+        if (!name.trim()) fieldsToHighlight.push("name");
+        if (!description.trim()) fieldsToHighlight.push("description");
+        parameters.forEach((param) => {
+            if (!param.name.trim()) fieldsToHighlight.push(`param-name-${param.id}`);
+            if (!param.type.trim()) fieldsToHighlight.push(`param-type-${param.id}`);
+            if (!param.description.trim()) fieldsToHighlight.push(`param-desc-${param.id}`);
+            
+            // Add fields with type-specific errors
+            switch(param.type) {
+                case 'enum':
+                    if (!param.enumValues || param.enumValues.length === 0) {
+                        fieldsToHighlight.push(`param-enum-${param.id}`);
+                    }
+                    break;
+                case 'object':
+                    if (!param.objectProperties || Object.keys(param.objectProperties).length === 0) {
+                        fieldsToHighlight.push(`param-object-${param.id}`);
+                    }
+                    break;
+            }
+        });
+        
+        setHighlightedFields(fieldsToHighlight);
         setErrors(newErrors);
         return newErrors.length === 0;
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!validateForm()) return;
 
         const toolData = {
@@ -313,15 +393,24 @@ export default function ToolEditor() {
             description,
             category,
             parameters,
-            status: 'active' as const,
-            lastModified: new Date().toISOString()
+            status: "active" as "active" | "inactive" | "draft",
+            lastModified: new Date().toISOString(),
+            categories: [category],
         };
 
         if (id) {
             updateTool(id, toolData);
         } else {
-            const newId = addTool(toolData);
-            navigate(`/tools/${newId}`);
+            try {
+                const newId = await addTool(toolData); // Await the promise
+                if (newId) {
+                    navigate(`/tools/${newId}`);
+                } else {
+                    console.error("Failed to add tool: No ID returned");
+                }
+            } catch (error) {
+                console.error("Error adding tool:", error);
+            }
         }
     };
 
@@ -557,9 +646,9 @@ export default function ToolEditor() {
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="name">Tool Name</Label>
+                        <Label htmlFor="tool-name">Tool Name</Label>
                         <Input
-                            id="name"
+                            id="tool-name"
                             placeholder="Enter tool name..."
                             value={name}
                             onChange={(e) => setName(e.target.value)}
@@ -568,11 +657,11 @@ export default function ToolEditor() {
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="description">Description</Label>
-                        <Textarea
-                            id="description"
+                        <label htmlFor="tool-description">Tool Description</label>
+                        <input
+                            id="tool-description"
+                            name="description"
                             placeholder="Enter tool description..."
-                            rows={4}
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
                             className={highlightedFields.includes("description") ? "border-red-500" : ""}

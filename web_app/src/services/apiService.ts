@@ -1,87 +1,121 @@
 import { Tool } from '../store/toolStore';
 
-// Replace this with your actual API URL
-const API_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://192.168.1.209:3001' // Update with the correct production IP
-  : 'http://192.168.1.209:3001';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
-// Handle response errors
-const handleResponse = async (response: Response) => {
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || `API error: ${response.status}`);
+/**
+ * Helper function to handle API fetch requests with proper error handling
+ */
+async function fetchWithErrorHandling<T>(
+  url: string, 
+  options: RequestInit = {}
+): Promise<T> {
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(options.headers || {}),
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      const errorMessage = 
+        errorData?.message || 
+        `API Error: ${response.status} ${response.statusText}`;
+      
+      throw new Error(errorMessage);
+    }
+
+    // Handle 204 No Content response
+    if (response.status === 204) {
+      return {} as T;
+    }
+
+    return await response.json();
+  } catch (error) {
+    if (error instanceof Error) {
+      console.error(`API call failed: ${error.message}`);
+      throw error;
+    }
+    throw new Error('Unknown error occurred during API call');
   }
-  return response.json();
-};
+}
 
-// API client for tools
-export const toolsApi = {
-  // Get all tools
+const toolsApi = {
+  /**
+   * Get all tools from the API
+   */
   getAll: async (): Promise<Record<string, Tool>> => {
-    const response = await fetch(`${API_URL}/api/tools`);
-    return handleResponse(response);
+    return fetchWithErrorHandling<Record<string, Tool>>(`${API_URL}/tools`);
   },
   
-  // Get a single tool by ID
+  /**
+   * Get a specific tool by ID
+   */
   getById: async (id: string): Promise<Tool> => {
-    const response = await fetch(`${API_URL}/api/tools/${id}`);
-    return handleResponse(response);
+    return fetchWithErrorHandling<Tool>(`${API_URL}/tools/${id}`);
   },
   
-  // Create a new tool
+  /**
+   * Create a new tool
+   */
   create: async (tool: Omit<Tool, 'id'>): Promise<Tool> => {
-    const response = await fetch(`${API_URL}/api/tools`, {
+    return fetchWithErrorHandling<Tool>(`${API_URL}/tools`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify(tool),
     });
-    return handleResponse(response);
   },
   
-  // Update an existing tool
-  update: async (id: string, tool: Partial<Tool>): Promise<Tool> => {
-    const response = await fetch(`${API_URL}/api/tools/${id}`, {
+  /**
+   * Update an existing tool
+   */
+  update: async (id: string, updates: Partial<Tool>): Promise<Tool> => {
+    return fetchWithErrorHandling<Tool>(`${API_URL}/tools/${id}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(tool),
+      body: JSON.stringify(updates),
     });
-    return handleResponse(response);
   },
   
-  // Delete a tool
+  /**
+   * Delete a tool
+   */
   delete: async (id: string): Promise<void> => {
-    const response = await fetch(`${API_URL}/api/tools/${id}`, {
+    return fetchWithErrorHandling<void>(`${API_URL}/tools/${id}`, {
       method: 'DELETE',
     });
-    return handleResponse(response);
   },
-
-  // Add a new endpoint to parse function signature
-  parseFunctionSignature: async (signature: string): Promise<{ name: string, params: { name: string, type: string }[] }> => {
-    const response = await fetch(`${API_URL}/api/parseFunctionSignature`, {
+  
+  /**
+   * Test a tool specification with sample input
+   */
+  testTool: async (toolSpec: any, testInput: any): Promise<any> => {
+    return fetchWithErrorHandling<any>(`${API_URL}/test-tool`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      body: JSON.stringify({ toolSpec, testInput }),
+    });
+  },
+  
+  /**
+   * Parse a function signature
+   */
+  parseFunctionSignature: async (signature: string): Promise<any> => {
+    return fetchWithErrorHandling<any>(`${API_URL}/parseFunctionSignature`, {
+      method: 'POST',
       body: JSON.stringify({ signature }),
     });
-    return handleResponse(response);
   },
-
-  // Add a new endpoint to generate description
-  generateDescription: async (name: string): Promise<string> => {
-    const response = await fetch(`${API_URL}/api/generateDescription`, {
+  
+  /**
+   * Generate description for a function signature
+   */
+  generateDescription: async (signature: string): Promise<string> => {
+    const response = await fetchWithErrorHandling<{ description: string }>(`${API_URL}/generateDescription`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({ signature }),
     });
-    return handleResponse(response);
+    
+    return response.description;
   },
 };
 

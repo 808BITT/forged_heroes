@@ -49,12 +49,6 @@
 - Create a basic API reference guide
 - Add examples of using different tool specs
 
-### Tool Specification Enhancements
-
-- Add support for different parameter types (e.g., integer, boolean, array, object) with appropriate validation
-
-
-
 ### Code Quality and Structure
 
 - Fix the missing import in tsconfig.json: import { app } from 'tsapp';

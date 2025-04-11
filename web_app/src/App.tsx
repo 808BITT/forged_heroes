@@ -14,6 +14,7 @@ import Support from './pages/Support';
 import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
 import { useToolStore } from './store/toolStore';
+import ErrorBoundary from './components/ErrorBoundary';
 
 function App() {
   const loadToolSpecifications = useToolStore(state => state.loadToolSpecifications);
@@ -24,44 +25,88 @@ function App() {
   // Load tool specifications on app initialization
   useEffect(() => {
     if (!isLoaded) {
-      loadToolSpecifications();
+      loadToolSpecifications().catch(err => {
+        console.error('Failed to load tool specifications:', err);
+      });
     }
   }, [isLoaded, loadToolSpecifications]);
 
   return (
     <ThemeProvider defaultTheme="dark">
-      <Router>
-        <MainLayout>
-          {error && (
-            <div className="bg-amber-500/10 border border-amber-500/50 text-amber-500 p-2 text-center text-sm mb-4 rounded-md">
-              <strong>Error connecting to server:</strong> {error}
-            </div>
-          )}
-
-          {isLoading && !isLoaded && (
-            <div className="fixed inset-0 bg-background/80 flex items-center justify-center z-50">
-              <div className="flex flex-col items-center p-4 bg-card rounded-lg shadow-lg">
-                <LoadingSpinner size="lg" />
-                <p className="mt-4 text-foreground">Loading Tool Forge...</p>
+      <ErrorBoundary>
+        <Router>
+          <MainLayout>
+            {error && (
+              <div className="bg-amber-500/10 border border-amber-500/50 text-amber-500 p-2 text-center text-sm mb-4 rounded-md">
+                <strong>Error connecting to server:</strong> {error}
               </div>
-            </div>
-          )}
+            )}
 
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/tools" element={<ToolsPage />} />
-            <Route path="/tools/new" element={<ToolEditor />} />
-            <Route path="/tools/:id" element={<ToolEditor />} />
-            <Route path="/armory" element={<ArmoryPage />} />
-            <Route path="/documentation" element={<Documentation />} />
-            <Route path="/support" element={<Support />} />
-            <Route path="/privacy" element={<Privacy />} />
-            <Route path="/terms" element={<Terms />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </MainLayout>
-      </Router>
+            {isLoading && !isLoaded && (
+              <div className="fixed inset-0 bg-background/80 flex items-center justify-center z-50">
+                <div className="flex flex-col items-center p-4 bg-card rounded-lg shadow-lg">
+                  <LoadingSpinner size="lg" />
+                  <p className="mt-4 text-foreground">Loading Tool Forge...</p>
+                </div>
+              </div>
+            )}
+
+            <Routes>
+              <Route path="/" element={
+                <ErrorBoundary>
+                  <HomePage />
+                </ErrorBoundary>
+              } />
+              <Route path="/dashboard" element={
+                <ErrorBoundary>
+                  <Dashboard />
+                </ErrorBoundary>
+              } />
+              <Route path="/tools" element={
+                <ErrorBoundary>
+                  <ToolsPage />
+                </ErrorBoundary>
+              } />
+              <Route path="/tools/new" element={
+                <ErrorBoundary>
+                  <ToolEditor />
+                </ErrorBoundary>
+              } />
+              <Route path="/tools/:id" element={
+                <ErrorBoundary>
+                  <ToolEditor />
+                </ErrorBoundary>
+              } />
+              <Route path="/armory" element={
+                <ErrorBoundary>
+                  <ArmoryPage />
+                </ErrorBoundary>
+              } />
+              <Route path="/documentation" element={
+                <ErrorBoundary>
+                  <Documentation />
+                </ErrorBoundary>
+              } />
+              <Route path="/support" element={
+                <ErrorBoundary>
+                  <Support />
+                </ErrorBoundary>
+              } />
+              <Route path="/privacy" element={
+                <ErrorBoundary>
+                  <Privacy />
+                </ErrorBoundary>
+              } />
+              <Route path="/terms" element={
+                <ErrorBoundary>
+                  <Terms />
+                </ErrorBoundary>
+              } />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </MainLayout>
+        </Router>
+      </ErrorBoundary>
     </ThemeProvider>
   );
 }

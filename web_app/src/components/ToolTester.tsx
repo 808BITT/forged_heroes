@@ -89,7 +89,7 @@ export const ToolTester = ({ toolSpec, buttonVariant = "outline", className = ""
     
     setIsTesting(true);
     try {
-      const response = await fetch('http://localhost:3001/api/test-tool', {
+      const response = await fetch('/api/test-tool', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -106,7 +106,7 @@ export const ToolTester = ({ toolSpec, buttonVariant = "outline", className = ""
       console.error('Error testing tool:', error);
       setTestResult({
         success: false,
-        message: 'Error connecting to server',
+        message: `Error connecting to server: ${error instanceof Error ? error.message : 'Unknown error'}`,
       });
     } finally {
       setIsTesting(false);
@@ -120,6 +120,7 @@ export const ToolTester = ({ toolSpec, buttonVariant = "outline", className = ""
         if (param.enum && Array.isArray(param.enum)) {
           return (
             <select
+              aria-label={param.description || key} // Ensure accessibility
               className="w-full p-2 border border-gray-300 dark:border-gray-700 rounded-md dark:bg-gray-800"
               value={inputValues[key] || param.default || ''}
               onChange={(e) => handleInputChange(key, e.target.value)}
@@ -137,6 +138,7 @@ export const ToolTester = ({ toolSpec, buttonVariant = "outline", className = ""
           return (
             <input
               type="datetime-local"
+              aria-label={param.description || key} // Ensure accessibility
               className="w-full p-2 border border-gray-300 dark:border-gray-700 rounded-md dark:bg-gray-800"
               value={inputValues[key] || ''}
               onChange={(e) => handleInputChange(key, e.target.value)}
@@ -146,6 +148,7 @@ export const ToolTester = ({ toolSpec, buttonVariant = "outline", className = ""
           return (
             <input
               type="date"
+              aria-label={param.description || key} // Ensure accessibility
               className="w-full p-2 border border-gray-300 dark:border-gray-700 rounded-md dark:bg-gray-800"
               value={inputValues[key] || ''}
               onChange={(e) => handleInputChange(key, e.target.value)}
@@ -155,6 +158,7 @@ export const ToolTester = ({ toolSpec, buttonVariant = "outline", className = ""
           return (
             <input
               type="email"
+              aria-label={param.description || key} // Ensure accessibility
               className="w-full p-2 border border-gray-300 dark:border-gray-700 rounded-md dark:bg-gray-800"
               value={inputValues[key] || ''}
               onChange={(e) => handleInputChange(key, e.target.value)}
@@ -164,6 +168,7 @@ export const ToolTester = ({ toolSpec, buttonVariant = "outline", className = ""
           return (
             <input
               type="url"
+              aria-label={param.description || key} // Ensure accessibility
               className="w-full p-2 border border-gray-300 dark:border-gray-700 rounded-md dark:bg-gray-800"
               value={inputValues[key] || ''}
               onChange={(e) => handleInputChange(key, e.target.value)}
@@ -174,6 +179,7 @@ export const ToolTester = ({ toolSpec, buttonVariant = "outline", className = ""
         return (
           <input
             type="text"
+            aria-label={param.description || key} // Ensure accessibility
             className="w-full p-2 border border-gray-300 dark:border-gray-700 rounded-md dark:bg-gray-800"
             value={inputValues[key] || ''}
             onChange={(e) => handleInputChange(key, e.target.value)}
@@ -187,6 +193,7 @@ export const ToolTester = ({ toolSpec, buttonVariant = "outline", className = ""
             step="1"
             min={param.minimum !== undefined ? param.minimum : undefined}
             max={param.maximum !== undefined ? param.maximum : undefined}
+            aria-label={param.description || key} // Ensure accessibility
             className="w-full p-2 border border-gray-300 dark:border-gray-700 rounded-md dark:bg-gray-800"
             value={inputValues[key] || 0}
             onChange={(e) => handleInputChange(key, parseInt(e.target.value))}
@@ -200,6 +207,7 @@ export const ToolTester = ({ toolSpec, buttonVariant = "outline", className = ""
             step="any"
             min={param.minimum !== undefined ? param.minimum : undefined}
             max={param.maximum !== undefined ? param.maximum : undefined}
+            aria-label={param.description || key} // Ensure accessibility
             className="w-full p-2 border border-gray-300 dark:border-gray-700 rounded-md dark:bg-gray-800"
             value={inputValues[key] || 0}
             onChange={(e) => handleInputChange(key, parseFloat(e.target.value))}
@@ -209,6 +217,7 @@ export const ToolTester = ({ toolSpec, buttonVariant = "outline", className = ""
       case 'boolean':
         return (
           <select
+            aria-label={param.description || key} // Ensure accessibility
             className="w-full p-2 border border-gray-300 dark:border-gray-700 rounded-md dark:bg-gray-800"
             value={inputValues[key] ? 'true' : 'false'}
             onChange={(e) => handleInputChange(key, e.target.value === 'true')}
@@ -234,6 +243,7 @@ export const ToolTester = ({ toolSpec, buttonVariant = "outline", className = ""
         return (
           <div className="space-y-1">
             <textarea
+              aria-label={param.description || key} // Ensure accessibility
               className="w-full p-2 border border-gray-300 dark:border-gray-700 rounded-md dark:bg-gray-800 font-mono text-sm"
               rows={4}
               value={jsonValue}
@@ -263,6 +273,7 @@ export const ToolTester = ({ toolSpec, buttonVariant = "outline", className = ""
         
         return (
           <textarea
+            aria-label={param.description || key} // Ensure accessibility
             className="w-full p-2 border border-gray-300 dark:border-gray-700 rounded-md dark:bg-gray-800 font-mono text-sm"
             rows={5}
             value={objectValue}
@@ -282,6 +293,7 @@ export const ToolTester = ({ toolSpec, buttonVariant = "outline", className = ""
         return (
           <input
             type="text"
+            aria-label={param.description || key} // Ensure accessibility
             className="w-full p-2 border border-gray-300 dark:border-gray-700 rounded-md dark:bg-gray-800"
             value={inputValues[key] || ''}
             onChange={(e) => handleInputChange(key, e.target.value)}

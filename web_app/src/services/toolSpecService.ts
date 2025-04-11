@@ -1,4 +1,5 @@
 import { Parameter, Tool } from '../store/toolStore';
+import toolsApi from './apiService';
 
 // Import tool specs directly
 import executeCommandSpec from '../../tool_specs/cli/execute_command.json';
@@ -68,29 +69,86 @@ export const loadToolSpecs = async (): Promise<Record<string, Tool>> => {
     }
 };
 
-// Function to parse function signature and extract name, parameters, and their types
-export const parseFunctionSignature = (signature: string) => {
-    const functionRegex = /function\s+(\w+)\s*\(([^)]*)\)/;
-    const match = signature.match(functionRegex);
+/**
+ * Parse a TypeScript function signature into a tool schema
+ */
+export function parseFunctionSignature(signature: string) {
+    try {
+        // Basic regex pattern to extract function name and parameters
+        const functionRegex = /function\s+([a-zA-Z0-9_]+)\s*\((.*)\)/;
+        const arrowFunctionRegex = /(?:const|let|var)?\s*([a-zA-Z0-9_]+)\s*=\s*(?:\(.*\)|[a-zA-Z0-9_]+)\s*=>\s*{/;
 
-    if (!match) {
+        let matches = signature.match(functionRegex);
+        if (!matches) {
+            matches = signature.match(arrowFunctionRegex);
+        }
+
+        if (!matches) {
+            console.warn('Could not parse function signature:', signature);
+            return null;
+        }
+
+        const functionName = matches[1];
+        const paramsString = matches[2] || '';
+
+        // Parse parameters
+        const paramRegex = /([a-zA-Z0-9_]+)\s*:\s*([a-zA-Z0-9_]+)/g;
+        const params = [];
+        let paramMatch;
+
+        while ((paramMatch = paramRegex.exec(paramsString)) !== null) {
+            params.push({
+                name: paramMatch[1],
+                type: mapTypeToSchema(paramMatch[2])
+            });
+        }
+
+        return {
+            name: functionName,
+            params
+        };
+    } catch (error) {
+        console.error('Error parsing function signature:', error);
         return null;
     }
+}
 
-    const name = match[1];
-    const params = match[2].split(',').map(param => {
-        const [paramName, paramType] = param.trim().split(':');
-        return {
-            name: paramName.trim(),
-            type: paramType ? paramType.trim() : 'string'
-        };
-    });
+/**
+ * Map TypeScript types to JSON schema types
+ */
+function mapTypeToSchema(tsType: string): string {
+    switch (tsType.toLowerCase()) {
+        case 'string':
+            return 'string';
+        case 'number':
+            return 'number';
+        case 'boolean':
+            return 'boolean';
+        case 'any':
+            return 'object';
+        case 'object':
+            return 'object';
+        case 'array':
+        case 'any[]':
+            return 'array';
+        case 'date':
+            return 'string';
+        case 'int':
+        case 'integer':
+            return 'integer';
+        default:
+            return 'string';
+    }
+}
 
-    return { name, params };
-};
-
-// Function to generate description using a light LLM
-export const generateDescription = async (name: string) => {
-    // Placeholder for LLM call
-    return `This function ${name} is used to...`;
-};
+/**
+ * Generate a description for a function signature using the API
+ */
+export async function generateDescription(signature: string): Promise<string> {
+    try {
+        return await toolsApi.generateDescription(signature);
+    } catch (error) {
+        console.error('Error generating description:', error);
+        return '';
+    }
+}
