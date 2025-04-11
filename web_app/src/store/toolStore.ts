@@ -8,7 +8,24 @@ export interface Parameter {
     type: string;
     description: string;
     required: boolean;
-    default?: string | number | boolean | object | null;
+    // New fields for enhanced parameter types
+    format?: string;
+    enumValues?: string[];
+    minimum?: string;
+    maximum?: string;
+    default?: string;
+    arrayItemType?: string;
+    arrayItemDescription?: string;
+    objectProperties?: Record<string, any>;
+    dependencies?: {
+        conditions: Array<{
+            id: string;
+            paramId: string;
+            operator: 'equals' | 'not_equals' | 'contains' | 'greater_than' | 'less_than';
+            value: string;
+        }>;
+        effect: 'required' | 'visible' | 'hidden';
+    } | null;
 }
 
 export interface Tool {
@@ -46,21 +63,28 @@ export const useToolStore = create<ToolState>()((set, get) => ({
 
     // Load tool specifications from the server
     loadToolSpecifications: async () => {
-        set({ isLoading: true, error: null });
         try {
-            // Load tools from the API
-            const apiTools = await toolsApi.getAll();
-            
+            set({ isLoading: true, error: null });
+            const fetchedTools = await toolsApi.getAll();
             set({
-                tools: apiTools,
+                tools: fetchedTools,
+                isLoading: false,
                 isLoaded: true,
-                isLoading: false
+                error: null
             });
         } catch (error) {
             console.error('Failed to load tools:', error);
+            let errorMessage = 'Failed to load tools: ';
+            if (error instanceof Error) {
+                errorMessage += error.message;
+            } else if (typeof error === 'string') {
+                errorMessage += error;
+            } else {
+                errorMessage += 'Unknown error';
+            }
             set({ 
                 isLoading: false, 
-                error: error instanceof Error ? error.message : 'Unknown error loading tools',
+                error: errorMessage,
                 isLoaded: true // Set to true so we don't keep trying to load
             });
         }

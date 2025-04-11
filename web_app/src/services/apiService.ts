@@ -2,8 +2,8 @@ import { Tool } from '../store/toolStore';
 
 // Replace this with your actual API URL
 const API_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://api.yourapp.com'
-  : 'http://localhost:3001';
+  ? 'https://192.168.1.209:3001' // Update with the correct production IP
+  : 'http://192.168.1.209:3001';
 
 // Handle response errors
 const handleResponse = async (response: Response) => {
@@ -56,6 +56,30 @@ export const toolsApi = {
   delete: async (id: string): Promise<void> => {
     const response = await fetch(`${API_URL}/api/tools/${id}`, {
       method: 'DELETE',
+    });
+    return handleResponse(response);
+  },
+
+  // Add a new endpoint to parse function signature
+  parseFunctionSignature: async (signature: string): Promise<{ name: string, params: { name: string, type: string }[] }> => {
+    const response = await fetch(`${API_URL}/api/parseFunctionSignature`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ signature }),
+    });
+    return handleResponse(response);
+  },
+
+  // Add a new endpoint to generate description
+  generateDescription: async (name: string): Promise<string> => {
+    const response = await fetch(`${API_URL}/api/generateDescription`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ name }),
     });
     return handleResponse(response);
   },

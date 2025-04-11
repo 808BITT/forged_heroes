@@ -99,7 +99,7 @@ export default function HomePage(): JSX.Element {
           Start equipping your LLM Heroes with the tools they need to accomplish tasks more effectively.
         </p>
         <Button size="lg" className="gap-2" asChild>
-          <Link to="/tools/new">
+          <Link to="/tools/new" className="flex items-center">
             Create Your First Tool
             <ArrowRight className="ml-2 h-4 w-4" />
           </Link>

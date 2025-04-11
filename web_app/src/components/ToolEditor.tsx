@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ArrowLeft, Copy, Plus, Save, Trash } from "lucide-react";
+import { ArrowLeft, Copy, Plus, Save, Trash, ChevronDown, ChevronUp } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Parameter, useToolStore } from "../store/toolStore";
@@ -9,8 +9,23 @@ import { Label } from "./ui/label.tsx";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Switch } from "./ui/switch";
 import { Textarea } from "./ui/textarea.tsx";
+import { ToolTester } from './ToolTester';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible.tsx";
+import ParameterDependency from "./ParameterDependency";
+import ArrayItemConfig from "./ArrayItemConfig";
+// New imports for LLM and API services
+import { parseFunctionSignature, generateDescription } from "../services/toolSpecService";
 
-const PARAMETER_TYPES = ["string", "number", "boolean", "object", "array"];
+// Updated parameter types
+const PARAMETER_TYPES = [
+  "string", 
+  "number", 
+  "integer", 
+  "boolean", 
+  "object", 
+  "array", 
+  "enum"
+];
 
 export default function ToolEditor() {
     const { id } = useParams<{ id: string }>();
@@ -27,6 +42,12 @@ export default function ToolEditor() {
     const [parameters, setParameters] = useState<Parameter[]>([]);
     const [jsonPreview, setJsonPreview] = useState("");
     const [copied, setCopied] = useState(false);
+    const [functionSignature, setFunctionSignature] = useState("");
+    const [highlightedFields, setHighlightedFields] = useState<string[]>([]);
+    const [errors, setErrors] = useState<string[]>([]);
+    
+    // Panel toggle state to manage complexity
+    const [openPanels, setOpenPanels] = useState<Record<string, boolean>>({});
 
     // Load tool data if editing
     useEffect(() => {
@@ -46,11 +67,29 @@ export default function ToolEditor() {
                     name: "",
                     type: "string",
                     description: "",
-                    required: true
+                    required: true,
+                    // New fields for enhanced type support
+                    format: "",
+                    enumValues: [],
+                    minimum: "",
+                    maximum: "",
+                    default: "",
+                    arrayItemType: "string",
+                    arrayItemDescription: "",
+                    objectProperties: {},
+                    dependencies: null
                 }
             ]);
         }
     }, [id, getToolById]);
+
+    // Toggle panel open/closed state
+    const togglePanel = (panelId: string) => {
+        setOpenPanels(prev => ({
+            ...prev,
+            [panelId]: !prev[panelId]
+        }));
+    };
 
     // Generate and update JSON preview
     useEffect(() => {
@@ -65,10 +104,62 @@ export default function ToolEditor() {
                     type: "object",
                     properties: parameters.reduce((acc, param) => {
                         if (param.name) {
-                            acc[param.name] = {
-                                type: param.type,
+                            // Base property definition
+                            const paramSpec: any = {
+                                type: param.type === 'integer' ? 'integer' : param.type,
                                 description: param.description
                             };
+                            
+                            // Add format if specified
+                            if (param.format && (param.type === 'string' || param.type === 'number' || param.type === 'integer')) {
+                                paramSpec.format = param.format;
+                            }
+                            
+                            // Add enum values if type is enum
+                            if (param.type === 'enum' && param.enumValues && param.enumValues.length > 0) {
+                                paramSpec.type = 'string';
+                                paramSpec.enum = param.enumValues;
+                            }
+                            
+                            // Add min/max for numbers/integers
+                            if ((param.type === 'number' || param.type === 'integer') && param.minimum !== '') {
+                                paramSpec.minimum = Number(param.minimum);
+                            }
+                            if ((param.type === 'number' || param.type === 'integer') && param.maximum !== '') {
+                                paramSpec.maximum = Number(param.maximum);
+                            }
+                            
+                            // Add default value if provided
+                            if (param.default !== '') {
+                                // Convert default value to appropriate type
+                                if (param.type === 'number' || param.type === 'integer') {
+                                    paramSpec.default = Number(param.default);
+                                } else if (param.type === 'boolean') {
+                                    paramSpec.default = param.default === 'true';
+                                } else {
+                                    paramSpec.default = param.default;
+                                }
+                            }
+                            
+                            // Handle array items
+                            if (param.type === 'array') {
+                                paramSpec.items = {
+                                    type: param.arrayItemType || 'string',
+                                    description: param.arrayItemDescription || ''
+                                };
+                                
+                                // If array items are objects, add their properties
+                                if (param.arrayItemType === 'object' && param.objectProperties) {
+                                    paramSpec.items.properties = param.objectProperties;
+                                }
+                            }
+                            
+                            // Handle object properties
+                            if (param.type === 'object' && param.objectProperties) {
+                                paramSpec.properties = param.objectProperties;
+                            }
+
+                            acc[param.name] = paramSpec;
                         }
                         return acc;
                     }, {} as Record<string, any>),
@@ -78,6 +169,35 @@ export default function ToolEditor() {
                 }
             }
         };
+        
+        // Add dependency conditions to the spec if they exist
+        const paramDependencies = parameters.filter(p => p.dependencies && p.name);
+        if (paramDependencies.length > 0) {
+            // Use a properly typed object to avoid direct property access issues
+            const paramsObj = toolSpec.function.parameters as any;
+            if (!paramsObj.dependencyMap) {
+                paramsObj.dependencyMap = {};
+            }
+            
+            paramDependencies.forEach(param => {
+                if (!param.dependencies || !param.name) return;
+                
+                paramsObj.dependencyMap[param.name] = {
+                    conditions: param.dependencies.conditions.map(c => {
+                        // Find the parameter this condition depends on
+                        const sourceParam = parameters.find(p => p.id === c.paramId);
+                        if (!sourceParam || !sourceParam.name) return null;
+                        
+                        return {
+                            sourceParam: sourceParam.name,
+                            operator: c.operator,
+                            value: c.value
+                        };
+                    }).filter(Boolean),
+                    effect: param.dependencies.effect
+                };
+            });
+        }
         
         setJsonPreview(JSON.stringify(toolSpec, null, 2));
     }, [name, description, parameters]);
@@ -90,7 +210,17 @@ export default function ToolEditor() {
                 name: "",
                 type: "string",
                 description: "",
-                required: true
+                required: true,
+                // New fields for enhanced type support
+                format: "",
+                enumValues: [],
+                minimum: "",
+                maximum: "",
+                default: "",
+                arrayItemType: "string",
+                arrayItemDescription: "",
+                objectProperties: {},
+                dependencies: null
             }
         ]);
     };
@@ -101,15 +231,82 @@ export default function ToolEditor() {
         ));
     };
 
+    const handleUpdateParameterDependency = (id: string, dependencies: any) => {
+        setParameters(parameters.map(p => 
+            p.id === id ? { ...p, dependencies } : p
+        ));
+    };
+
+    const handleUpdateArrayConfig = (id: string, config: any) => {
+        setParameters(parameters.map(p => 
+            p.id === id ? { 
+                ...p, 
+                arrayItemType: config.itemType,
+                arrayItemDescription: config.itemDescription,
+                objectProperties: config.itemType === 'object' ? config.itemProperties : p.objectProperties
+            } : p
+        ));
+    };
+
+    const handleUpdateObjectProperties = (id: string, propertiesText: string) => {
+        try {
+            const properties = JSON.parse(propertiesText);
+            setParameters(parameters.map(p => 
+                p.id === id ? { ...p, objectProperties: properties } : p
+            ));
+        } catch (error) {
+            // Handle invalid JSON
+            console.error('Invalid object properties JSON:', error);
+        }
+    };
+
+    const handleUpdateEnumValues = (id: string, valuesText: string) => {
+        try {
+            // Split by comma and trim whitespace
+            const values = valuesText.split(',').map(v => v.trim()).filter(v => v);
+            setParameters(parameters.map(p => 
+                p.id === id ? { ...p, enumValues: values } : p
+            ));
+        } catch (error) {
+            console.error('Error updating enum values:', error);
+        }
+    };
+
     const handleRemoveParameter = (id: string) => {
         setParameters(parameters.filter(p => p.id !== id));
     };
 
+    const validateForm = () => {
+        const newErrors: string[] = [];
+        if (!name.trim()) newErrors.push("Tool name is required");
+        if (!description.trim()) newErrors.push("Tool description is required");
+        parameters.forEach((param, index) => {
+            if (!param.name.trim()) newErrors.push(`Parameter ${index + 1} name is required`);
+            if (!param.type.trim()) newErrors.push(`Parameter ${index + 1} type is required`);
+            if (!param.description.trim()) newErrors.push(`Parameter ${index + 1} description is required`);
+            
+            // Validate type-specific fields
+            if (param.type === 'enum' && (!param.enumValues || param.enumValues.length === 0)) {
+                newErrors.push(`Parameter ${index + 1} (${param.name || 'unnamed'}) must have at least one enum value`);
+            }
+            
+            if (param.type === 'array' && !param.arrayItemType) {
+                newErrors.push(`Parameter ${index + 1} (${param.name || 'unnamed'}) must specify array item type`);
+            }
+            
+            // Validate min/max for numbers
+            if ((param.type === 'number' || param.type === 'integer') && 
+                param.minimum !== '' && param.maximum !== '' && 
+                Number(param.minimum) > Number(param.maximum)) {
+                newErrors.push(`Parameter ${index + 1} (${param.name || 'unnamed'}) minimum value cannot be greater than maximum`);
+            }
+        });
+        setErrors(newErrors);
+        return newErrors.length === 0;
+    };
+
     const handleSave = () => {
-        if (!name.trim()) {
-            alert("Tool name is required");
-            return;
-        }
+        if (!validateForm()) return;
 
         const toolData = {
             name,
@@ -142,6 +339,154 @@ export default function ToolEditor() {
             setTimeout(() => setCopied(false), 2000);
         } catch (err) {
             console.error('Failed to copy', err);
+        }
+    };
+
+    const handleFunctionSignatureChange = async (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        const signature = e.target.value;
+        setFunctionSignature(signature);
+
+        if (signature.trim()) {
+            const result = parseFunctionSignature(signature);
+            if (result) {
+                const { name, params } = result;
+                setName(name);
+                setParameters(params.map(param => ({
+                    id: `p${Date.now()}`,
+                    name: param.name,
+                    type: param.type,
+                    description: "",
+                    required: true,
+                    // New fields for enhanced type support
+                    format: "",
+                    enumValues: [],
+                    minimum: "",
+                    maximum: "",
+                    default: "",
+                    arrayItemType: "string",
+                    arrayItemDescription: "",
+                    objectProperties: {},
+                    dependencies: null
+                })));
+            }
+            setName(name);
+            setParameters(parameters);
+
+            const descriptionStart = await generateDescription(signature);
+            setDescription(descriptionStart);
+
+            const fieldsToHighlight = [];
+            if (!name) fieldsToHighlight.push("name");
+            if (!descriptionStart) fieldsToHighlight.push("description");
+            parameters.forEach((param: Parameter) => {
+                if (!param.name) fieldsToHighlight.push(`param-name-${param.id}`);
+                if (!param.type) fieldsToHighlight.push(`param-type-${param.id}`);
+                if (!param.description) fieldsToHighlight.push(`param-desc-${param.id}`);
+            });
+            setHighlightedFields(fieldsToHighlight);
+        }
+    };
+
+    // Render type-specific configuration fields
+    const renderTypeSpecificFields = (param: Parameter) => {
+        switch (param.type) {
+            case 'string':
+                return (
+                    <div className="space-y-2">
+                        <Label htmlFor={`param-format-${param.id}`}>Format (Optional)</Label>
+                        <Select
+                            value={param.format || ""}
+                            onValueChange={(value) => handleUpdateParameter(param.id, 'format', value)}
+                        >
+                            <SelectTrigger id={`param-format-${param.id}`}>
+                                <SelectValue placeholder="No format restriction" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="none">None</SelectItem>
+                                <SelectItem value="email">Email</SelectItem>
+                                <SelectItem value="uri">URI</SelectItem>
+                                <SelectItem value="date-time">Date-Time</SelectItem>
+                                <SelectItem value="date">Date</SelectItem>
+                                <SelectItem value="time">Time</SelectItem>
+                                <SelectItem value="password">Password</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                );
+                
+            case 'number':
+            case 'integer':
+                return (
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor={`param-min-${param.id}`}>Minimum (Optional)</Label>
+                            <Input
+                                id={`param-min-${param.id}`}
+                                type="number"
+                                value={param.minimum}
+                                onChange={(e) => handleUpdateParameter(param.id, 'minimum', e.target.value)}
+                                placeholder="No minimum"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor={`param-max-${param.id}`}>Maximum (Optional)</Label>
+                            <Input
+                                id={`param-max-${param.id}`}
+                                type="number"
+                                value={param.maximum}
+                                onChange={(e) => handleUpdateParameter(param.id, 'maximum', e.target.value)}
+                                placeholder="No maximum"
+                            />
+                        </div>
+                    </div>
+                );
+                
+            case 'enum':
+                return (
+                    <div className="space-y-2">
+                        <Label htmlFor={`param-enum-${param.id}`}>Enum Values (comma-separated)</Label>
+                        <Input
+                            id={`param-enum-${param.id}`}
+                            value={param.enumValues ? param.enumValues.join(', ') : ''}
+                            onChange={(e) => handleUpdateEnumValues(param.id, e.target.value)}
+                            placeholder="value1, value2, value3"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                            Enter comma-separated values that this parameter can accept
+                        </p>
+                    </div>
+                );
+                
+            case 'array':
+                return (
+                    <ArrayItemConfig
+                        itemType={param.arrayItemType || 'string'}
+                        itemDescription={param.arrayItemDescription || ''}
+                        itemProperties={param.objectProperties}
+                        onUpdate={(config) => handleUpdateArrayConfig(param.id, config)}
+                    />
+                );
+                
+            case 'object':
+                return (
+                    <div className="space-y-2">
+                        <Label htmlFor={`param-object-${param.id}`}>Object Properties (JSON)</Label>
+                        <Textarea
+                            id={`param-object-${param.id}`}
+                            value={JSON.stringify(param.objectProperties || {}, null, 2)}
+                            onChange={(e) => handleUpdateObjectProperties(param.id, e.target.value)}
+                            placeholder='{ "property": { "type": "string", "description": "Property description" } }'
+                            rows={5}
+                            className="font-mono text-sm"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                            Define the properties of this object in JSON format
+                        </p>
+                    </div>
+                );
+                
+            default:
+                return null;
         }
     };
 
@@ -178,8 +523,20 @@ export default function ToolEditor() {
                         <Save className="h-4 w-4" />
                         Save
                     </Button>
+                    {jsonPreview && <ToolTester toolSpec={jsonPreview} className="mr-2" />}
                 </div>
             </div>
+
+            {errors.length > 0 && (
+                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                    <strong className="font-bold">Error:</strong>
+                    <ul className="mt-2">
+                        {errors.map((error, index) => (
+                            <li key={index}>{error}</li>
+                        ))}
+                    </ul>
+                </div>
+            )}
 
             <div className="grid gap-8 lg:grid-cols-2">
                 {/* Tool Configuration Form */}
@@ -189,12 +546,24 @@ export default function ToolEditor() {
                     className="space-y-6"
                 >
                     <div className="space-y-2">
+                        <Label htmlFor="function-signature">Function Signature</Label>
+                        <Textarea
+                            id="function-signature"
+                            placeholder="Paste function signature here..."
+                            rows={4}
+                            value={functionSignature}
+                            onChange={handleFunctionSignatureChange}
+                        />
+                    </div>
+
+                    <div className="space-y-2">
                         <Label htmlFor="name">Tool Name</Label>
                         <Input
                             id="name"
                             placeholder="Enter tool name..."
                             value={name}
                             onChange={(e) => setName(e.target.value)}
+                            className={highlightedFields.includes("name") ? "border-red-500" : ""}
                         />
                     </div>
 
@@ -206,6 +575,7 @@ export default function ToolEditor() {
                             rows={4}
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
+                            className={highlightedFields.includes("description") ? "border-red-500" : ""}
                         />
                     </div>
 
@@ -239,59 +609,84 @@ export default function ToolEditor() {
                         </div>
 
                         <div className="space-y-4">
-                            {parameters.map((param, _index) => (
-                                <div key={param.id} className="rounded-md border p-4">
-                                    <div className="grid gap-4 sm:grid-cols-2">
-                                        <div className="space-y-2">
-                                            <Label htmlFor={`param-name-${param.id}`}>
-                                                Parameter Name
-                                            </Label>
-                                            <Input
-                                                id={`param-name-${param.id}`}
-                                                value={param.name}
-                                                onChange={(e) => 
-                                                    handleUpdateParameter(param.id, 'name', e.target.value)
-                                                }
-                                                placeholder="e.g. location"
-                                            />
+                            {parameters.map((param, index) => (
+                                <Collapsible 
+                                    key={param.id} 
+                                    open={openPanels[param.id]} 
+                                    onOpenChange={() => togglePanel(param.id)}
+                                    className="rounded-md border"
+                                >
+                                    <div className="p-4">
+                                        <div className="flex items-center justify-between">
+                                            <h3 className="text-sm font-medium">
+                                                Parameter {index + 1}: {param.name || "Unnamed Parameter"}
+                                            </h3>
+                                            <CollapsibleTrigger asChild>
+                                                <Button variant="ghost" size="sm">
+                                                    {openPanels[param.id] ? (
+                                                        <ChevronUp className="h-4 w-4" />
+                                                    ) : (
+                                                        <ChevronDown className="h-4 w-4" />
+                                                    )}
+                                                </Button>
+                                            </CollapsibleTrigger>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4 mt-2">
+                                            <div className="space-y-2">
+                                                <Label htmlFor={`param-name-${param.id}`}>
+                                                    Parameter Name
+                                                </Label>
+                                                <Input
+                                                    id={`param-name-${param.id}`}
+                                                    value={param.name}
+                                                    onChange={(e) => 
+                                                        handleUpdateParameter(param.id, 'name', e.target.value)
+                                                    }
+                                                    placeholder="e.g. location"
+                                                    className={highlightedFields.includes(`param-name-${param.id}`) ? "border-red-500" : ""}
+                                                />
+                                            </div>
+                                            
+                                            <div className="space-y-2">
+                                                <Label htmlFor={`param-type-${param.id}`}>Type</Label>
+                                                <Select
+                                                    value={param.type}
+                                                    onValueChange={(value) => 
+                                                        handleUpdateParameter(param.id, 'type', value)
+                                                    }
+                                                >
+                                                    <SelectTrigger id={`param-type-${param.id}`}>
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {PARAMETER_TYPES.map(type => (
+                                                            <SelectItem key={type} value={type}>
+                                                                {type.charAt(0).toUpperCase() + type.slice(1)}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
                                         </div>
                                         
-                                        <div className="space-y-2">
-                                            <Label htmlFor={`param-type-${param.id}`}>Type</Label>
-                                            <Select
-                                                value={param.type}
-                                                onValueChange={(value) => 
-                                                    handleUpdateParameter(param.id, 'type', value)
-                                                }
-                                            >
-                                                <SelectTrigger id={`param-type-${param.id}`}>
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {PARAMETER_TYPES.map(type => (
-                                                        <SelectItem key={type} value={type}>
-                                                            {type}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
+                                        <div className="mt-4">
+                                            <div className="space-y-2">
+                                                <Label htmlFor={`param-desc-${param.id}`}>
+                                                    Description
+                                                </Label>
+                                                <Input
+                                                    id={`param-desc-${param.id}`}
+                                                    value={param.description}
+                                                    onChange={(e) => 
+                                                        handleUpdateParameter(param.id, 'description', e.target.value)
+                                                    }
+                                                    placeholder="Describe the parameter"
+                                                    className={highlightedFields.includes(`param-desc-${param.id}`) ? "border-red-500" : ""}
+                                                />
+                                            </div>
                                         </div>
-                                        
-                                        <div className="space-y-2 sm:col-span-2">
-                                            <Label htmlFor={`param-desc-${param.id}`}>
-                                                Description
-                                            </Label>
-                                            <Input
-                                                id={`param-desc-${param.id}`}
-                                                value={param.description}
-                                                onChange={(e) => 
-                                                    handleUpdateParameter(param.id, 'description', e.target.value)
-                                                }
-                                                placeholder="Describe the parameter"
-                                            />
-                                        </div>
-                                        
-                                        <div className="flex items-center space-x-2">
+
+                                        <div className="flex items-center space-x-2 mt-4">
                                             <Switch
                                                 id={`param-required-${param.id}`}
                                                 checked={param.required}
@@ -303,22 +698,47 @@ export default function ToolEditor() {
                                                 Required parameter
                                             </Label>
                                         </div>
-                                        
-                                        {parameters.length > 1 && (
-                                            <div className="flex justify-end">
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => handleRemoveParameter(param.id)}
-                                                >
-                                                    <Trash className="h-4 w-4 mr-1" />
-                                                    Remove
-                                                </Button>
-                                            </div>
-                                        )}
                                     </div>
-                                </div>
+
+                                    <CollapsibleContent>
+                                        <div className="p-4 border-t space-y-4">
+                                            {/* Default value field - common for all types */}
+                                            <div className="space-y-2">
+                                                <Label htmlFor={`param-default-${param.id}`}>Default Value (Optional)</Label>
+                                                <Input
+                                                    id={`param-default-${param.id}`}
+                                                    value={param.default || ''}
+                                                    onChange={(e) => handleUpdateParameter(param.id, 'default', e.target.value)}
+                                                    placeholder="No default value"
+                                                />
+                                            </div>
+                                            
+                                            {/* Type-specific configuration */}
+                                            {renderTypeSpecificFields(param)}
+                                            
+                                            {/* Parameter Dependencies */}
+                                            <ParameterDependency 
+                                                parameter={param}
+                                                allParameters={parameters}
+                                                onUpdate={(deps) => handleUpdateParameterDependency(param.id, deps)}
+                                            />
+                                            
+                                            {parameters.length > 1 && (
+                                                <div className="flex justify-end mt-4">
+                                                    <Button
+                                                        type="button"
+                                                        variant="destructive"
+                                                        size="sm"
+                                                        onClick={() => handleRemoveParameter(param.id)}
+                                                    >
+                                                        <Trash className="h-4 w-4 mr-1" />
+                                                        Remove Parameter
+                                                    </Button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </CollapsibleContent>
+                                </Collapsible>
                             ))}
                         </div>
                     </div>

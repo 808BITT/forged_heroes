@@ -1,17 +1,18 @@
+import { Menu, X } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Button } from '../ui/button';
-import { Menu, X } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { Button } from '../ui/button';
 
 export default function Navbar(): JSX.Element {
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
   const location = useLocation();
 
   const navItems = [
-    { name: 'Home', path: '/' },
+    // { name: 'Home', path: '/' },
     { name: 'Dashboard', path: '/dashboard' },
     { name: 'Tools', path: '/tools' },
+    { name: 'Armory', path: '/armory' },
   ];
 
   const isActive = (path: string) => {
@@ -36,15 +37,15 @@ export default function Navbar(): JSX.Element {
                 key={item.path}
                 to={item.path} 
                 className={cn(
-                  "text-foreground hover:text-primary transition-colors",
-                  isActive(item.path) && "text-primary font-medium"
+                  "text-foreground hover:text-primary transition-colors mr-4 hover:bg-gradient-to-r from-purple-600 to-blue-500 bg-clip-text",
+                  isActive(item.path) && "text-primary font-medium underline"
                 )}
               >
                 {item.name}
               </Link>
             ))}
             
-            <Button variant="default" asChild>
+            <Button variant="default">
               <Link to="/tools/new">Create Tool</Link>
             </Button>
           </div>
@@ -80,7 +81,6 @@ export default function Navbar(): JSX.Element {
             <Button 
               variant="default" 
               className="w-full mt-3"
-              asChild
               onClick={() => setIsMenuOpen(false)}
             >
               <Link to="/tools/new">Create Tool</Link>

@@ -1,105 +1,36 @@
 {
-  "9d4f51b9-5b8b-47d4-9b80-f10cf25f7aa4": {
-    "id": "9d4f51b9-5b8b-47d4-9b80-f10cf25f7aa4",
-    "name": "execute_command",
-    "description": "Execute a command line interface (CLI) command",
-    "category": "cli",
+  "70130d86-48fd-429e-9e1f-ec774cc2ca73": {
+    "name": "test",
+    "description": "This is a test tool definition",
+    "category": "CLI",
     "parameters": [
       {
-        "id": "p1",
-        "name": "command",
+        "id": "p1744306212040",
+        "name": "param1",
         "type": "string",
-        "description": "The CLI command to execute",
-        "required": true
-      },
-      {
-        "id": "p2",
-        "name": "args",
-        "type": "array",
-        "description": "Arguments for the CLI command",
-        "required": false
-      },
-      {
-        "id": "p3",
-        "name": "timeout",
-        "type": "integer",
-        "description": "Timeout for the command in seconds",
+        "description": "Example string parameter",
         "required": false
       }
     ],
     "status": "active",
-    "lastModified": "2025-04-10T12:03:59.750Z",
-    "source": "/home/bobbitt/projects/personal/forge2/web_app/tool_specs/cli/execute_command.json"
+    "lastModified": "2025-04-10T17:31:04.692Z",
+    "id": "70130d86-48fd-429e-9e1f-ec774cc2ca73"
   },
-  "57d71db6-077b-4cd9-9434-bdee937187b8": {
-    "id": "57d71db6-077b-4cd9-9434-bdee937187b8",
-    "name": "remote_executions",
-    "description": "Execute a command via SSH",
-    "category": "cli",
+  "687a07eb-e606-4a82-a591-da57a105a6be": {
+    "name": "test2",
+    "description": "Another test",
+    "category": "CLI",
     "parameters": [
       {
-        "id": "p1",
-        "name": "user",
+        "id": "p1744306288693",
+        "name": "example",
         "type": "string",
-        "description": "The PAM user",
-        "required": true
-      },
-      {
-        "id": "p2",
-        "name": "host",
-        "type": "string",
-        "description": "The hostname/IP to connect to",
-        "required": true
-      },
-      {
-        "id": "p3",
-        "name": "password",
-        "type": "string",
-        "description": "Password to login with",
-        "required": true
-      },
-      {
-        "id": "p4",
-        "name": "command",
-        "type": "string",
-        "description": "The command to execute",
-        "required": true
-      },
-      {
-        "id": "p5",
-        "name": "args",
-        "type": "array",
-        "description": "Array of args to pass to the command",
-        "required": false
-      }
-    ],
-    "status": "active",
-    "lastModified": "2025-04-10T12:10:52.751Z",
-    "source": "/home/bobbitt/projects/personal/forge2/web_app/tool_specs/cli/remote_execution.json"
-  },
-  "9d714f95-256e-4658-b4d8-6bdef67f3b48": {
-    "id": "9d714f95-256e-4658-b4d8-6bdef67f3b48",
-    "name": "get_current_weather",
-    "description": "Get the current weather for a location",
-    "category": "General",
-    "parameters": [
-      {
-        "id": "p1",
-        "name": "location",
-        "type": "string",
-        "description": "The location to get the weather for, e.g. San Francisco, CA",
-        "required": true
-      },
-      {
-        "id": "p2",
-        "name": "format",
-        "type": "string",
-        "description": "The format to return the weather in, e.g. 'celsius' or 'fahrenheit'",
+        "description": "asdfasdf",
         "required": true
       }
     ],
     "status": "active",
-    "lastModified": "2025-04-10T12:03:59.750Z",
-    "source": "/home/bobbitt/projects/personal/forge2/web_app/tool_specs/example_tool_spec.json"
+    "lastModified": "2025-04-10T17:31:52.784Z",
+    "id": "687a07eb-e606-4a82-a591-da57a105a6be"
   }
 }

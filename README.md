@@ -1,46 +1,86 @@
 # Forged Heroes
 
-A Python-based tool framework with a text user interface (TUI) for interactive tool management and execution.
+This repository contains two versions of the Forged Heroes tool framework:
+
+1. **CLI Version**: A Python-based tool framework with a text user interface (TUI) for interactive tool management and execution.
+2. **Web Application Version**: A modern web application for creating, managing, and sharing tool specifications for Large Language Models (LLMs).
 
 ## Overview
 
-Forged Heroes provides a flexible framework for defining, managing, and executing tools with standardized parameter schemas. The project focuses on creating a consistent interface for tools while maintaining modularity and extensibility.
+### CLI Version
 
-## Features
+The CLI version is located in the `cli/` directory. It provides a TUI for defining, managing, and executing tools with standardized parameter schemas. This version is ideal for users who prefer a terminal-based interface.
 
-- Standardized tool definition format
-- Parameter validation using schema-based approach
-- Interactive text user interface with guided tool creation wizard
-- Modular architecture for easy extension
-- Comprehensive test suite
-- User-friendly folder and file management
+For more details, refer to the [CLI README](./cli/README.md).
 
-## Installation
+### Web Application Version
+
+The web application version is located in the `web_app/` directory. It offers a graphical interface for creating and managing tool specifications, with features like JSON generation and parameter validation.
+
+#### Key Features
+
+- **Tool Management**: Create, edit, and delete tool specifications
+- **Parameter Validation**: Define and validate parameters with different types
+- **JSON Generation**: Export tool specifications as JSON
+- **The Armory**: Interactive visualization of tool schemas with fluid animations and category-based exploration
+
+For more details, refer to the [Web App README](./web_app/README.md).
+
+## Getting Started
 
 ### Prerequisites
 
-- Python 3.10 or higher
+- For the CLI version: Python 3.10 or higher
+- For the Web App version: Node.js v18+ and npm
 
-### Setup 
+### Installation
 
-1. Clone the repository
+#### CLI Version
+
+1. Navigate to the `cli/` directory:
+
    ```bash
-   git clone https://github.com/808BiTT/forged_heroes.git
-   cd forged_heroes
+   cd cli
    ```
 
-2. Set up a virtual environment (optional but recommended)
+2. Set up a virtual environment (optional but recommended):
+
    ```bash
    python -m venv .venv
    source .venv/bin/activate  # On Windows: .venv\Scripts\activate
    ```
 
-3. Install dependencies
+3. Install dependencies:
+
    ```bash
    pip install -r requirements.txt
    ```
 
-## Usage
+#### Web Application Version
+
+1. Navigate to the `web_app/` directory:
+
+   ```bash
+   cd web_app
+   ```
+
+2. Install frontend dependencies:
+
+   ```bash
+   npm install
+   ```
+
+3. Install backend dependencies:
+
+   ```bash
+   cd server
+   npm install
+   cd ..
+   ```
+
+### Running the Applications
+
+#### CLI Version
 
 Run the main application:
 
@@ -48,229 +88,24 @@ Run the main application:
 python main.py
 ```
 
-This will start the Forged Heroes application with the TUI interface.
+#### Web Application Version
 
-## Project Structure
+1. Start the backend server:
 
-```
-forged_heroes/
-├── main.py                  # Application entry point
-├── internal/                # Core application code
-│   ├── tui/                 # Text UI implementation
-│   │   ├── __init__.py      # Package initialization
-│   │   ├── app.py           # Main TUI application
-│   │   ├── constants.py     # Shared constants
-│   │   ├── style.css        # TUI styling
-│   │   ├── screens/         # Screen components
-│   │   │   ├── help.py      # Help screen
-│   │   │   ├── property_editor.py  # Property editor
-│   │   │   └── tool_wizard.py      # Tool wizard
-│   │   └── dialogs/         # Dialog components
-│   │       ├── confirm.py   # Confirmation dialogs
-│   │       ├── error.py     # Error dialogs
-│   │       └── file.py      # File-related dialogs
-│   └── tool/                # Tool framework
-│       ├── parameter.py     # Parameter schema definitions
-│       ├── property.py      # Tool property definitions
-│       └── tool.py          # Core tool class
-├── scripts/                 # Utility scripts
-└── tool_specs/              # Tool specification files
-    └── cli/                 # CLI tool specifications
-```
-
-## Architecture
-
-### Overview
-
-Forged Heroes is built with a modular architecture that separates concerns into distinct components:
-
-1. **Tool Framework**: Core classes for defining tools and their parameters
-2. **User Interface**: TUI layer for user interaction, organized into screens and dialogs
-3. **Tool Specifications**: External definition of tools
-
-### Tool Framework
-
-The Tool framework consists of three main classes:
-
-- **Tool**: Represents an executable tool with a name, description, and parameters
-- **ToolParams**: Defines the schema for tool parameters
-- **ToolProperty**: Defines individual parameters with types, descriptions, and validation
-
-This design follows a schema-based approach similar to JSON Schema, allowing for robust parameter validation and documentation.
-
-#### Relationship Diagram
-
-```
-Tool
- |
- +-- ToolParams
-      |
-      +-- ToolProperty(s)
-```
-
-### TUI Architecture
-
-The TUI module is organized into a hierarchical structure of components:
-
-- **App**: Core application controller (Tui class)
-- **Screens**: Full-screen interfaces for different functions
-  - Tool Wizard for creating/editing tools
-  - Help screen for user guidance
-- **Dialogs**: Modal interfaces for specific actions
-  - Error dialog for displaying error messages
-  - Confirmation dialog for confirming actions
-  - File dialogs for saving files and creating folders
-
-### Execution Flow
-
-1. Tools are defined either programmatically or via specification files
-2. The TUI loads and presents tools to the user
-3. User selects a tool and provides parameters through the wizard interface
-4. Parameters are validated against the tool's schema
-5. Tool execution is handled with validated parameters
-
-### Future Architecture Plans
-
-- **Plugin System**: Support for dynamically loading tools from plugins
-- **Session Management**: Save and restore tool sessions
-- **Remote Execution**: Execute tools on remote systems
-- **Output Processing**: Process and transform tool outputs
-
-## CSS and Styling
-
-This project uses `textual/css`, a CSS-like syntax specific to the Textual framework. It is not fully compatible with standard HTML/CSS. If you encounter linting errors, ensure your editor or linter is configured for `textual/css`.
-
-### Common Issues
-- **Invalid Properties**: Some standard CSS properties, like `scrollbar-width`, are not supported. Refer to the Textual documentation for supported properties.
-- **Parsing Errors**: Ensure all values are valid for `textual/css`. For example, use `solid red` instead of `5px solid` for borders.
-
-### Troubleshooting
-- Verify your CSS file uses only supported properties.
-- Test changes by running the application and observing the UI.
-- Refer to the Textual documentation for guidance on styling.
-
-## Development
-
-### Running Tests
-
-```bash
-python run_tests.py
-```
-
-Or run specific test files:
-
-```bash
-python -m unittest internal/tool/test_tool_initialization.py
-```
-
-### Troubleshooting Failing Tests
-
-If tests are failing:
-
-1. Ensure all dependencies are installed:
    ```bash
-   pip install -r requirements.txt
+   cd web_app/server
+   node server.js
    ```
 
-2. Verify the Python version is 3.10 or higher:
+2. In a new terminal, start the frontend development server:
+
    ```bash
-   python --version
+   cd web_app
+   npm run dev
    ```
 
-3. Check for missing or outdated test cases. Add tests for any uncovered functionality.
+3. Open your browser and navigate to:
 
-4. Run tests with verbose output to identify specific failures:
-   ```bash
-   python -m unittest discover internal -v
    ```
-
-5. Debug failing tests by inspecting the code and adding print statements or breakpoints.
-
-### Creating Tests for TUI Components
-
-Each TUI component is designed to be testable in isolation. To create tests for a specific component:
-
-```python
-from textual.app import App
-from textual.widgets import Button
-from internal.tui.dialogs.error import ErrorDialog
-import pytest
-
-# Example test for ErrorDialog
-def test_error_dialog_dismiss_on_ok():
-    # Test setup
-    app = App()
-    dialog = ErrorDialog("Test error message")
-    
-    # Simulate button press
-    dialog._on_button_pressed(Button.Pressed(Button(id="error-ok-btn")))
-    
-    # Assert dialog was dismissed
-    assert dialog._dismissed
-```
-
-### Adding New Tools
-
-Tools can be added by:
-
-1. Creating a new tool specification in `tool_specs/`
-2. Using the TUI wizard interface for guided creation
-3. Programmatically creating a tool using the Tool class
-
-Example:
-
-```python
-from internal.tool.tool import Tool
-from internal.tool.parameter import ToolParams, ToolProperty
-
-# Create a new tool
-weather_tool = Tool(
-    name="get_weather",
-    description="Get the current weather for a location"
-)
-
-# Add parameters
-weather_tool.parameters.add_property(
-    "location",
-    ToolProperty(
-        name="location",
-        type="string",
-        description="The location to get weather for",
-        required=True
-    )
-)
-```
-
-## Screenshots
-
-Here are some screenshots showcasing the application:
-
-### Main Screen
-![Main Screen](./screenshots/main_screen.jpg)
-
-### New Tool
-![New Tool](./screenshots/new_tool.jpg)
-
-### Add Tool Parameter
-![Add Tool Parameter](./screenshots/add_tool_parameter.jpg)
-
-### Edit Tool
-![Edit Tool](./screenshots/edit_tool.jpg)
-
-### Edit Tool Property
-![Edit Tool Property](./screenshots/edit_tool_property.jpg)
-
-### Help Screen
-![Help Screen](./screenshots/help_screen.jpg)
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
-
-[Insert your license here]
-
-## Acknowledgments
-
-[Any acknowledgments you want to include]
+   http://localhost:5173
+   ```
