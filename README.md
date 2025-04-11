@@ -109,3 +109,37 @@ python main.py
    ```
    http://localhost:5173
    ```
+
+## New Features in v0.0.2
+
+### CLI Version
+
+#### Enhanced Parameter Management
+
+The `cli_tui/tool_editor.go` file now includes enhanced parameter management features, such as support for parameter dependencies, array item configuration, and object properties.
+
+#### Improved Tool List and Editor Views
+
+The `cli_tui/main.go` and `cli_tui/tool_list.go` files have been updated to provide better handling of tool saving, editing, and parameter management.
+
+#### Additional Metadata and Validation for Parameters
+
+The `cli_tui/models.go` file has been updated to include additional metadata and validation for parameters.
+
+### Web Application Version
+
+#### New API Endpoints
+
+The `web_app/server/server.js` file now includes new API endpoints for parsing function signatures and generating descriptions.
+
+#### Enhanced Tool Editor
+
+The `web_app/src/components/ToolEditor.tsx` file has been updated to support advanced parameter types and dependencies.
+
+#### New Armory Page
+
+The `web_app/src/pages/ArmoryPage.tsx` file introduces a new Armory page for interactive visualization of tool schemas.
+
+#### Improved Tool Management and Testing Features
+
+The `web_app/src/services/apiService.ts` and `web_app/src/services/toolSpecService.ts` files have been updated to provide improved tool management and testing features.

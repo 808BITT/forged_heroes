@@ -1,6 +1,6 @@
 {
   "name": "forge-api",
-  "version": "1.0.0",
+  "version": "0.0.2",
   "description": "Backend API for Forge Tool Management System",
   "main": "server.js",
   "scripts": {

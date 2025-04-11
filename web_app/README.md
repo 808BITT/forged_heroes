@@ -19,6 +19,9 @@ Equip your "LLM Heroes" with powerful tools! Forge makes it easy to define struc
 - **Responsive Design**: Works on desktop and mobile devices
 - **Tool Testing**: Test your tool specifications against a mock LLM to ensure they function as expected
 - **Parameter Dependencies**: Define dependencies between parameters, so that the visibility and requirements of one parameter can depend on the value of another.
+- **Enhanced Tool Editor**: Support for advanced parameter types and dependencies.
+- **New Armory Page**: Interactive visualization of tool schemas.
+- **Improved Tool Management and Testing Features**: Enhanced tool management and testing features.
 
 ## Technology Stack
 
