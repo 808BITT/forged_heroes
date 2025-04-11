@@ -60,13 +60,14 @@ describe('ToolEditor', () => {
         <ToolEditor />
       </BrowserRouter>
     );
+
     // Check that the form loads with proper title and default fields
     expect(screen.getByText(/Create Tool/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Tool Name/i)).toBeInTheDocument();
     expect(screen.getByLabelText('Tool Description')).toBeInTheDocument();
 
     // Ensure "Category" label is associated with a form control
-    expect(screen.getByText(/Category/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Category/i).length).toBeGreaterThan(0);
 
     // Should have at least one parameter by default
     expect(screen.getByText(/Parameter 1/i)).toBeInTheDocument();
@@ -117,9 +118,11 @@ describe('ToolEditor', () => {
     });
 
     // Click save button
-    fireEvent.click(screen.getByText(/Save/i));
+    const saveButton = screen.getByRole('button', { name: /^Save$/i });
+    fireEvent.click(saveButton);
 
     await waitFor(() => {
+      expect(mockAddTool).toHaveBeenCalledTimes(1);
       expect(mockAddTool).toHaveBeenCalledWith(expect.objectContaining({
         name: 'Test Tool',
         description: 'New tool description',
@@ -134,7 +137,7 @@ describe('ToolEditor', () => {
   });
 
   test('processes function signature input', async () => {
-    // Mock the parsing and description generation
+    // Adjust mock return values for parseFunctionSignature and generateDescription
     (parseFunctionSignature as jest.Mock).mockReturnValue({
       name: 'testFunction',
       params: [{ name: 'param1', type: 'string' }],
@@ -156,6 +159,11 @@ describe('ToolEditor', () => {
     await waitFor(() => {
       expect(parseFunctionSignature).toHaveBeenCalledWith('function testFunction(param1: string)');
       expect(generateDescription).toHaveBeenCalledWith('function testFunction(param1: string)');
+      expect((screen.getByLabelText(/Tool Name/i) as HTMLInputElement).value).toBe('testFunction');
+    });
+
+    // Ensure the tool name is set correctly for function signature input
+    await waitFor(() => {
       expect((screen.getByLabelText(/Tool Name/i) as HTMLInputElement).value).toBe('testFunction');
     });
   });
