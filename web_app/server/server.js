@@ -1,10 +1,11 @@
 const express = require('express');
 const cors = require('cors');
-const fs = require('fs').promises;
-const path = require('path');
+const sqlite3 = require('sqlite3').verbose();
 const { v4: uuidv4 } = require('uuid');
 const swaggerJsDoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
+const fs = require('fs').promises;
+const path = require('path');
 
 // Initialize express
 const app = express();
@@ -35,37 +36,102 @@ const swaggerOptions = {
 const swaggerDocs = swaggerJsDoc(swaggerOptions);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
-// Storage path for tools data
-const TOOLS_FILE = path.join(__dirname, '..', '..', 'data', 'tools.json');
+// Update SQLite database initialization to use a file-based database
+const DB_PATH = path.join(__dirname, 'data', 'tools.db');
+const db = new sqlite3.Database(DB_PATH, (err) => {
+  if (err) {
+    console.error('Error opening database:', err);
+  } else {
+    console.log(`Connected to SQLite database at ${DB_PATH}`);
+    db.run(`CREATE TABLE IF NOT EXISTS tools (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      description TEXT,
+      category TEXT,
+      parameters TEXT,
+      status TEXT,
+      lastModified TEXT
+    )`, (err) => {
+      if (err) {
+        console.error('Error creating tools table:', err);
+      }
+    });
+  }
+});
+
+const TOOLS_FILE = path.join(__dirname, 'tools.json');
 
 // Ensure data directory exists
 async function ensureDataDir() {
-  const dataDir = path.join(__dirname, 'data');
+  const dir = path.dirname(TOOLS_FILE);
   try {
-    await fs.access(dataDir);
-  } catch (err) {
-    await fs.mkdir(dataDir, { recursive: true });
-    // Create an empty tools file
-    await fs.writeFile(TOOLS_FILE, '{}');
-  }
-}
-
-// Helper to load tools from file
-async function loadTools() {
-  try {
-    await ensureDataDir();
-    const data = await fs.readFile(TOOLS_FILE, 'utf8');
-    return JSON.parse(data || '{}');
+    await fs.mkdir(dir, { recursive: true });
   } catch (error) {
-    console.error('Error loading tools:', error);
-    return {};
+    console.error('Error ensuring data directory:', error);
   }
 }
 
-// Helper to save tools to file
-async function saveTools(tools) {
-  await ensureDataDir();
-  await fs.writeFile(TOOLS_FILE, JSON.stringify(tools, null, 2));
+// Updated loadTools function to fetch from SQLite database
+async function loadTools() {
+  return new Promise((resolve, reject) => {
+    db.all('SELECT * FROM tools', [], (err, rows) => {
+      if (err) {
+        console.error('Error loading tools from database:', err);
+        reject(err);
+      } else {
+        const tools = rows.reduce((acc, row) => {
+          acc[row.id] = {
+            ...row,
+            parameters: JSON.parse(row.parameters),
+          };
+          return acc;
+        }, {});
+        console.log('Loaded tools from database:', tools); // Log loaded tools
+        resolve(tools);
+      }
+    });
+  });
+}
+
+// Helper to save a tool to the database
+async function saveTool(tool) {
+  return new Promise((resolve, reject) => {
+    db.run(
+      `INSERT OR REPLACE INTO tools (id, name, description, category, parameters, status, lastModified)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        tool.id,
+        tool.name,
+        tool.description,
+        tool.category,
+        JSON.stringify(tool.parameters),
+        tool.status,
+        tool.lastModified,
+      ],
+      (err) => {
+        if (err) {
+          console.error('Error saving tool:', err);
+          reject(err);
+        } else {
+          resolve();
+        }
+      }
+    );
+  });
+}
+
+// Helper to delete a tool from the database
+async function deleteTool(id) {
+  return new Promise((resolve, reject) => {
+    db.run('DELETE FROM tools WHERE id = ?', [id], (err) => {
+      if (err) {
+        console.error('Error deleting tool:', err);
+        reject(err);
+      } else {
+        resolve();
+      }
+    });
+  });
 }
 
 // API Routes
@@ -123,7 +189,6 @@ app.get('/api/tools/:id', async (req, res) => {
 // Create a new tool
 app.post('/api/tools', async (req, res) => {
   try {
-    const tools = await loadTools();
     const id = uuidv4();
     const newTool = {
       ...req.body,
@@ -131,8 +196,7 @@ app.post('/api/tools', async (req, res) => {
       lastModified: new Date().toISOString()
     };
     
-    tools[id] = newTool;
-    await saveTools(tools);
+    await saveTool(newTool);
     
     res.status(201).json(newTool);
   } catch (error) {
@@ -143,22 +207,22 @@ app.post('/api/tools', async (req, res) => {
 // Update a tool
 app.put('/api/tools/:id', async (req, res) => {
   try {
-    const tools = await loadTools();
     const { id } = req.params;
+    const tools = await loadTools();
     
     if (!tools[id]) {
       return res.status(404).json({ message: 'Tool not found' });
     }
     
-    tools[id] = {
+    const updatedTool = {
       ...tools[id],
       ...req.body,
       id,
       lastModified: new Date().toISOString()
     };
     
-    await saveTools(tools);
-    res.json(tools[id]);
+    await saveTool(updatedTool);
+    res.json(updatedTool);
   } catch (error) {
     res.status(500).json({ message: 'Failed to update tool' });
   }
@@ -167,15 +231,14 @@ app.put('/api/tools/:id', async (req, res) => {
 // Delete a tool
 app.delete('/api/tools/:id', async (req, res) => {
   try {
-    const tools = await loadTools();
     const { id } = req.params;
+    const tools = await loadTools();
     
     if (!tools[id]) {
       return res.status(404).json({ message: 'Tool not found' });
     }
     
-    delete tools[id];
-    await saveTools(tools);
+    await deleteTool(id);
     res.status(204).send();
   } catch (error) {
     res.status(500).json({ message: 'Failed to delete tool' });
@@ -206,6 +269,5 @@ app.post('/api/generateDescription', async (req, res) => {
 
 // Start server
 app.listen(PORT, async () => {
-  await ensureDataDir();
   console.log(`Server running on port ${PORT}`);
 });
