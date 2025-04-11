@@ -3,6 +3,8 @@ const cors = require('cors');
 const fs = require('fs').promises;
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
+const swaggerJsDoc = require('swagger-jsdoc');
+const swaggerUi = require('swagger-ui-express');
 
 // Initialize express
 const app = express();
@@ -11,6 +13,27 @@ const PORT = process.env.PORT || 3001;
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Swagger configuration
+const swaggerOptions = {
+  swaggerDefinition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'Forged Heroes API',
+      version: '0.0.1',
+      description: 'API documentation for Forged Heroes',
+    },
+    servers: [
+      {
+        url: `http://localhost:${PORT}`,
+      },
+    ],
+  },
+  apis: [__filename], // Use JSDoc comments in this file
+};
+
+const swaggerDocs = swaggerJsDoc(swaggerOptions);
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 // Storage path for tools data
 const TOOLS_FILE = path.join(__dirname, '..', '..', 'data', 'tools.json');
@@ -46,7 +69,15 @@ async function saveTools(tools) {
 }
 
 // API Routes
-// Get all tools
+/**
+ * @swagger
+ * /api/tools:
+ *   get:
+ *     summary: Retrieve all tools
+ *     responses:
+ *       200:
+ *         description: A list of tools
+ */
 app.get('/api/tools', async (req, res) => {
   try {
     const tools = await loadTools();
@@ -56,7 +87,24 @@ app.get('/api/tools', async (req, res) => {
   }
 });
 
-// Get a single tool
+/**
+ * @swagger
+ * /api/tools/{id}:
+ *   get:
+ *     summary: Retrieve a single tool by ID
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The tool ID
+ *     responses:
+ *       200:
+ *         description: A single tool
+ *       404:
+ *         description: Tool not found
+ */
 app.get('/api/tools/:id', async (req, res) => {
   try {
     const tools = await loadTools();

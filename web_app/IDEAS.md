@@ -15,7 +15,6 @@
 - Include loading states and error handling in UI components
 - Consider adding a configuration panel
 - Implement drag-and-drop functionality for reordering parameters in the tool specification editor
-- Add a visual representation of the tool specification schema to help users understand the structure
 - Improve the overall design and user experience of the application with a more modern and intuitive interface
 - Implement a dark mode for the UI
 
@@ -28,7 +27,6 @@
 - Implement versioning for the API to allow for future changes without breaking existing clients
 - Add detailed logging for API requests and responses for debugging and monitoring purposes
 - Implement caching for frequently accessed data to improve performance
-- Add support for Swagger/OpenAPI to generate API documentation automatically
 
 ### Security Enhancements
 
