@@ -1,14 +1,18 @@
 import { motion } from "framer-motion";
 import { ArrowRight, Plus, Search, Wrench } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useToolStore } from "../store/toolStore";
+import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { Badge } from "./ui/badge";
 import { LoadingSpinner } from "./ui/loading-spinner";
 
-export default function ToolList() {
+interface ToolListProps {
+    hideHeader?: boolean;
+}
+
+export default function ToolList({ hideHeader = false }: ToolListProps) {
     const tools = useToolStore((state) => state.getAllTools());
     const loadToolSpecifications = useToolStore((state) => state.loadToolSpecifications);
     const isLoaded = useToolStore((state) => state.isLoaded);
@@ -44,20 +48,23 @@ export default function ToolList() {
 
     return (
         <div className="space-y-8">
-            <div className="flex flex-col gap-4">
-                <div className="flex items-center justify-between">
-                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Tools</h1>
-                    <Link to="/tools/new">
-                        <Button className="gap-2">
-                            <Plus className="h-4 w-4" />
-                            New Tool
-                        </Button>
-                    </Link>
+            {/* Only show header when not hidden */}
+            {!hideHeader && (
+                <div className="flex flex-col gap-4">
+                    <div className="flex items-center justify-between">
+                        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Tools</h1>
+                        <Link to="/tools/new">
+                            <Button className="gap-2">
+                                <Plus className="h-4 w-4" />
+                                New Tool
+                            </Button>
+                        </Link>
+                    </div>
+                    <p className="text-muted-foreground">
+                        Equip your LLM Heroes with powerful tools
+                    </p>
                 </div>
-                <p className="text-muted-foreground">
-                    Equip your LLM Heroes with powerful tools
-                </p>
-            </div>
+            )}
 
             <div className="flex flex-wrap items-center gap-4">
                 <div className="relative flex-1 min-w-[200px]">
