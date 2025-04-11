@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ArrowLeft, Copy, Plus, Save, Trash, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowLeft, Copy, Plus, Save, Trash, ChevronDown, ChevronUp, PlusCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Parameter, useToolStore } from "../store/toolStore";
@@ -15,6 +15,17 @@ import ParameterDependency from "./ParameterDependency";
 import ArrayItemConfig from "./ArrayItemConfig";
 // New imports for LLM and API services
 import { parseFunctionSignature, generateDescription } from "../services/toolSpecService";
+import toolsApi, { Category } from "../services/apiService";
+// Modal components for the category dialog
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "./ui/dialog";
+import { useToast, ToastContainer } from "./ui/use-toast";
 
 // Updated parameter types
 const PARAMETER_TYPES = [
@@ -34,6 +45,7 @@ export default function ToolEditor() {
     const addTool = useToolStore((state) => state.addTool);
     const updateTool = useToolStore((state) => state.updateTool);
     const deleteTool = useToolStore((state) => state.deleteTool);
+    const { addToast, toasts } = useToast();
     
     // Form state
     const [name, setName] = useState("");
@@ -46,42 +58,128 @@ export default function ToolEditor() {
     const [highlightedFields, setHighlightedFields] = useState<string[]>([]);
     const [errors, setErrors] = useState<string[]>([]);
     
+    // New state for categories
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [isLoadingCategories, setIsLoadingCategories] = useState(false);
+    const [categoryError, setCategoryError] = useState("");
+    
+    // New state for the category modal
+    const [categoryModalOpen, setCategoryModalOpen] = useState(false);
+    const [newCategoryName, setNewCategoryName] = useState("");
+    const [isSavingCategory, setIsSavingCategory] = useState(false);
+    const [newCategoryError, setNewCategoryError] = useState("");
+    
     // Panel toggle state to manage complexity
     const [openPanels, setOpenPanels] = useState<Record<string, boolean>>({});
 
+    // Fetch categories from API
+    useEffect(() => {
+        async function fetchCategories() {
+            try {
+                setIsLoadingCategories(true);
+                setCategoryError("");
+                const categoriesData = await toolsApi.getCategories();
+                setCategories(categoriesData);
+            } catch (error) {
+                console.error("Error fetching categories:", error);
+                setCategoryError("Failed to load categories");
+                // Fallback to default categories
+                setCategories([
+                    { id: "default-general", name: "General" },
+                    { id: "default-cli", name: "CLI" },
+                    { id: "default-api", name: "API" },
+                    { id: "default-data", name: "Data" }
+                ]);
+            } finally {
+                setIsLoadingCategories(false);
+            }
+        }
+        
+        fetchCategories();
+    }, []);
+
+    // Handle adding a new category
+    const handleAddCategory = async () => {
+        // Validate input
+        if (!newCategoryName.trim()) {
+            setNewCategoryError("Category name is required");
+            return;
+        }
+
+        // Check if category already exists (case insensitive)
+        if (categories.some(cat => cat.name.toLowerCase() === newCategoryName.trim().toLowerCase())) {
+            setNewCategoryError("Category already exists");
+            return;
+        }
+
+        try {
+            setIsSavingCategory(true);
+            setNewCategoryError("");
+            
+            // Call API to create new category
+            const newCategory = await toolsApi.createCategory(newCategoryName.trim());
+            
+            // Update categories list
+            setCategories(prev => [...prev, newCategory]);
+            
+            // Select the new category
+            setCategory(newCategory.name);
+            
+            // Close modal and reset
+            setCategoryModalOpen(false);
+            setNewCategoryName("");
+            
+            // Show success message
+            addToast({
+                title: "Category added",
+                description: `"${newCategory.name}" has been added to categories`,
+            });
+        } catch (error) {
+            console.error("Error creating category:", error);
+            setNewCategoryError("Failed to create category");
+        } finally {
+            setIsSavingCategory(false);
+        }
+    };
+
     // Load tool data if editing
     useEffect(() => {
-        if (id) {
-            const tool = getToolById(id);
-            if (tool) {
-                setName(tool.name);
-                setDescription(tool.description);
-                setCategory(tool.category);
-                setParameters(tool.parameters);
-            }
-        } else {
-            // Default empty parameter for new tools
-            setParameters([
-                {
-                    id: `p${Date.now()}`,
-                    name: "",
-                    type: "string",
-                    description: "",
-                    required: true,
-                    // New fields for enhanced type support
-                    format: "",
-                    enumValues: [],
-                    minimum: "",
-                    maximum: "",
-                    default: "",
-                    arrayItemType: "string",
-                    arrayItemDescription: "",
-                    objectProperties: {},
-                    dependencies: null
+        async function fetchTool() {
+            if (id) {
+                try {
+                    const response = await toolsApi.getById(id); // Fetch tool by ID
+                    setName(response.name);
+                    setDescription(response.description);
+                    setCategory(response.category);
+                    setParameters(response.parameters);
+                } catch (error) {
+                    console.error('Error fetching tool:', error);
                 }
-            ]);
+            } else {
+                // Default empty parameter for new tools
+                setParameters([
+                    {
+                        id: `p${Date.now()}`,
+                        name: "",
+                        type: "string",
+                        description: "",
+                        required: true,
+                        // New fields for enhanced type support
+                        format: "",
+                        enumValues: [],
+                        minimum: "",
+                        maximum: "",
+                        default: "",
+                        arrayItemType: "string",
+                        arrayItemDescription: "",
+                        objectProperties: {},
+                        dependencies: null
+                    }
+                ]);
+            }
         }
-    }, [id, getToolById]);
+        fetchTool();
+    }, [id]);
 
     // Toggle panel open/closed state
     const togglePanel = (panelId: string) => {
@@ -398,19 +496,19 @@ export default function ToolEditor() {
             categories: [category],
         };
 
-        if (id) {
-            updateTool(id, toolData);
-        } else {
-            try {
+        try {
+            if (id) {
+                updateTool(id, toolData);
+            } else {
                 const newId = await addTool(toolData); // Await the promise
                 if (newId) {
                     navigate(`/tools/${newId}`);
                 } else {
                     console.error("Failed to add tool: No ID returned");
                 }
-            } catch (error) {
-                console.error("Error adding tool:", error);
             }
+        } catch (error) {
+            console.error("Error saving tool:", error);
         }
     };
 
@@ -580,292 +678,367 @@ export default function ToolEditor() {
     };
 
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-8"
-        >
-            <div className="flex flex-wrap items-center justify-between gap-4">
-                <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                        <Link to="/tools">
-                            <Button variant="ghost" size="icon">
-                                <ArrowLeft className="h-4 w-4" />
-                            </Button>
-                        </Link>
-                        <h1 className="text-xl sm:text-3xl font-bold tracking-tight">
-                            {id ? "Edit Tool" : "Create Tool"}
-                        </h1>
+        <>
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-8"
+            >
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                            <Link to="/tools">
+                                <Button variant="ghost" size="icon">
+                                    <ArrowLeft className="h-4 w-4" />
+                                </Button>
+                            </Link>
+                            <h1 className="text-xl sm:text-3xl font-bold tracking-tight">
+                                {id ? "Edit Tool" : "Create Tool"}
+                            </h1>
+                        </div>
+                        <p className="text-muted-foreground">
+                            Configure your tool settings and parameters
+                        </p>
                     </div>
-                    <p className="text-muted-foreground">
-                        Configure your tool settings and parameters
-                    </p>
-                </div>
-                <div className="flex gap-2">
-                    {id && (
-                        <Button variant="destructive" onClick={handleDelete}>
-                            <Trash className="h-4 w-4 mr-2" />
-                            Delete
+                    <div className="flex gap-2">
+                        {id && (
+                            <Button variant="destructive" onClick={handleDelete}>
+                                <Trash className="h-4 w-4 mr-2" />
+                                Delete
+                            </Button>
+                        )}
+                        <Button onClick={handleSave} className="gap-2">
+                            <Save className="h-4 w-4" />
+                            Save
                         </Button>
-                    )}
-                    <Button onClick={handleSave} className="gap-2">
-                        <Save className="h-4 w-4" />
-                        Save
-                    </Button>
-                    {jsonPreview && <ToolTester toolSpec={jsonPreview} className="mr-2" />}
+                        {jsonPreview && <ToolTester toolSpec={jsonPreview} className="mr-2" />}
+                    </div>
                 </div>
-            </div>
 
-            {errors.length > 0 && (
-                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-                    <strong className="font-bold">Error:</strong>
-                    <ul className="mt-2">
-                        {errors.map((error, index) => (
-                            <li key={index}>{error}</li>
-                        ))}
-                    </ul>
-                </div>
-            )}
-
-            <div className="grid gap-8 lg:grid-cols-2">
-                {/* Tool Configuration Form */}
-                <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="space-y-6"
-                >
-                    <div className="space-y-2">
-                        <Label htmlFor="function-signature">Function Signature</Label>
-                        <Textarea
-                            id="function-signature"
-                            placeholder="Paste function signature here..."
-                            rows={4}
-                            value={functionSignature}
-                            onChange={handleFunctionSignatureChange}
-                        />
+                {errors.length > 0 && (
+                    <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                        <strong className="font-bold">Error:</strong>
+                        <ul className="mt-2">
+                            {errors.map((error, index) => (
+                                <li key={index}>{error}</li>
+                            ))}
+                        </ul>
                     </div>
+                )}
 
-                    <div className="space-y-2">
-                        <Label htmlFor="tool-name">Tool Name</Label>
-                        <Input
-                            id="tool-name"
-                            placeholder="Enter tool name..."
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            className={highlightedFields.includes("name") ? "border-red-500" : ""}
-                        />
-                    </div>
+                <div className="grid gap-8 lg:grid-cols-2">
+                    {/* Tool Configuration Form */}
+                    <motion.div
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="space-y-6"
+                    >
+                        <div className="space-y-2">
+                            <Label htmlFor="function-signature">Function Signature</Label>
+                            <Textarea
+                                id="function-signature"
+                                placeholder="Paste function signature here..."
+                                rows={4}
+                                value={functionSignature}
+                                onChange={handleFunctionSignatureChange}
+                            />
+                        </div>
 
-                    <div className="space-y-2">
-                        <label htmlFor="tool-description">Tool Description</label>
-                        <input
-                            id="tool-description"
-                            name="description"
-                            placeholder="Enter tool description..."
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                            className={highlightedFields.includes("description") ? "border-red-500" : ""}
-                        />
-                    </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="tool-name">Tool Name</Label>
+                            <Input
+                                id="tool-name"
+                                placeholder="Enter tool name..."
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                className={highlightedFields.includes("name") ? "border-red-500" : ""}
+                            />
+                        </div>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="category">Category</Label>
-                        <Select value={category} onValueChange={setCategory}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select a category" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="General">General</SelectItem>
-                                <SelectItem value="CLI">CLI</SelectItem>
-                                <SelectItem value="API">API</SelectItem>
-                                <SelectItem value="Data">Data</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="tool-description">Tool Description</Label>
+                            <Input
+                                id="tool-description"
+                                placeholder="Enter tool description..."
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                                className={highlightedFields.includes("description") ? "border-red-500" : ""}
+                            />
+                        </div>
 
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                            <Label>Parameters</Label>
-                            <Button 
-                                type="button" 
-                                variant="outline" 
-                                size="sm" 
-                                onClick={handleAddParameter}
-                            >
-                                <Plus className="h-4 w-4 mr-1" />
-                                Add Parameter
-                            </Button>
+                        <div className="space-y-2">
+                            <div className="flex justify-between items-center">
+                                <Label htmlFor="category">Category</Label>
+                                <Button 
+                                    type="button" 
+                                    variant="ghost" 
+                                    size="sm"
+                                    onClick={() => setCategoryModalOpen(true)}
+                                >
+                                    <PlusCircle className="h-4 w-4 mr-1" />
+                                    Add Category
+                                </Button>
+                            </div>
+                            <Select value={category} onValueChange={setCategory}>
+                                <SelectTrigger id="category">
+                                    <SelectValue placeholder={isLoadingCategories ? "Loading categories..." : "Select a category"} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {categoryError ? (
+                                        <SelectItem value="error" disabled>
+                                            Error loading categories
+                                        </SelectItem>
+                                    ) : isLoadingCategories ? (
+                                        <SelectItem value="loading" disabled>
+                                            Loading categories...
+                                        </SelectItem>
+                                    ) : categories.length === 0 ? (
+                                        <SelectItem value="none" disabled>
+                                            No categories found
+                                        </SelectItem>
+                                    ) : (
+                                        categories.map(cat => (
+                                            <SelectItem key={cat.id} value={cat.name}>
+                                                {cat.name}
+                                            </SelectItem>
+                                        ))
+                                    )}
+                                </SelectContent>
+                            </Select>
                         </div>
 
                         <div className="space-y-4">
-                            {parameters.map((param, index) => (
-                                <Collapsible 
-                                    key={param.id} 
-                                    open={openPanels[param.id]} 
-                                    onOpenChange={() => togglePanel(param.id)}
-                                    className="rounded-md border"
+                            <div className="flex items-center justify-between">
+                                <Label>Parameters</Label>
+                                <Button 
+                                    type="button" 
+                                    variant="outline" 
+                                    size="sm" 
+                                    onClick={handleAddParameter}
                                 >
-                                    <div className="p-4">
-                                        <div className="flex items-center justify-between">
-                                            <h3 className="text-sm font-medium">
-                                                Parameter {index + 1}: {param.name || "Unnamed Parameter"}
-                                            </h3>
-                                            <CollapsibleTrigger asChild>
-                                                <Button variant="ghost" size="sm">
-                                                    {openPanels[param.id] ? (
-                                                        <ChevronUp className="h-4 w-4" />
-                                                    ) : (
-                                                        <ChevronDown className="h-4 w-4" />
-                                                    )}
-                                                </Button>
-                                            </CollapsibleTrigger>
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-4 mt-2">
-                                            <div className="space-y-2">
-                                                <Label htmlFor={`param-name-${param.id}`}>
-                                                    Parameter Name
-                                                </Label>
-                                                <Input
-                                                    id={`param-name-${param.id}`}
-                                                    value={param.name}
-                                                    onChange={(e) => 
-                                                        handleUpdateParameter(param.id, 'name', e.target.value)
-                                                    }
-                                                    placeholder="e.g. location"
-                                                    className={highlightedFields.includes(`param-name-${param.id}`) ? "border-red-500" : ""}
-                                                />
-                                            </div>
-                                            
-                                            <div className="space-y-2">
-                                                <Label htmlFor={`param-type-${param.id}`}>Type</Label>
-                                                <Select
-                                                    value={param.type}
-                                                    onValueChange={(value) => 
-                                                        handleUpdateParameter(param.id, 'type', value)
-                                                    }
-                                                >
-                                                    <SelectTrigger id={`param-type-${param.id}`}>
-                                                        <SelectValue />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        {PARAMETER_TYPES.map(type => (
-                                                            <SelectItem key={type} value={type}>
-                                                                {type.charAt(0).toUpperCase() + type.slice(1)}
-                                                            </SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-                                        </div>
-                                        
-                                        <div className="mt-4">
-                                            <div className="space-y-2">
-                                                <Label htmlFor={`param-desc-${param.id}`}>
-                                                    Description
-                                                </Label>
-                                                <Input
-                                                    id={`param-desc-${param.id}`}
-                                                    value={param.description}
-                                                    onChange={(e) => 
-                                                        handleUpdateParameter(param.id, 'description', e.target.value)
-                                                    }
-                                                    placeholder="Describe the parameter"
-                                                    className={highlightedFields.includes(`param-desc-${param.id}`) ? "border-red-500" : ""}
-                                                />
-                                            </div>
-                                        </div>
+                                    <Plus className="h-4 w-4 mr-1" />
+                                    Add Parameter
+                                </Button>
+                            </div>
 
-                                        <div className="flex items-center space-x-2 mt-4">
-                                            <Switch
-                                                id={`param-required-${param.id}`}
-                                                checked={param.required}
-                                                onCheckedChange={(checked) => 
-                                                    handleUpdateParameter(param.id, 'required', checked)
-                                                }
-                                            />
-                                            <Label htmlFor={`param-required-${param.id}`}>
-                                                Required parameter
-                                            </Label>
-                                        </div>
-                                    </div>
-
-                                    <CollapsibleContent>
-                                        <div className="p-4 border-t space-y-4">
-                                            {/* Default value field - common for all types */}
-                                            <div className="space-y-2">
-                                                <Label htmlFor={`param-default-${param.id}`}>Default Value (Optional)</Label>
-                                                <Input
-                                                    id={`param-default-${param.id}`}
-                                                    value={param.default || ''}
-                                                    onChange={(e) => handleUpdateParameter(param.id, 'default', e.target.value)}
-                                                    placeholder="No default value"
-                                                />
-                                            </div>
-                                            
-                                            {/* Type-specific configuration */}
-                                            {renderTypeSpecificFields(param)}
-                                            
-                                            {/* Parameter Dependencies */}
-                                            <ParameterDependency 
-                                                parameter={param}
-                                                allParameters={parameters}
-                                                onUpdate={(deps) => handleUpdateParameterDependency(param.id, deps)}
-                                            />
-                                            
-                                            {parameters.length > 1 && (
-                                                <div className="flex justify-end mt-4">
-                                                    <Button
-                                                        type="button"
-                                                        variant="destructive"
-                                                        size="sm"
-                                                        onClick={() => handleRemoveParameter(param.id)}
-                                                    >
-                                                        <Trash className="h-4 w-4 mr-1" />
-                                                        Remove Parameter
+                            <div className="space-y-4">
+                                {parameters.map((param, index) => (
+                                    <Collapsible 
+                                        key={param.id} 
+                                        open={openPanels[param.id]} 
+                                        onOpenChange={() => togglePanel(param.id)}
+                                        className="rounded-md border"
+                                    >
+                                        <div className="p-4">
+                                            <div className="flex items-center justify-between">
+                                                <h3 className="text-sm font-medium">
+                                                    Parameter {index + 1}: {param.name || "Unnamed Parameter"}
+                                                </h3>
+                                                <CollapsibleTrigger asChild>
+                                                    <Button variant="ghost" size="sm">
+                                                        {openPanels[param.id] ? (
+                                                            <ChevronUp className="h-4 w-4" />
+                                                        ) : (
+                                                            <ChevronDown className="h-4 w-4" />
+                                                        )}
                                                     </Button>
+                                                </CollapsibleTrigger>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-4 mt-2">
+                                                <div className="space-y-2">
+                                                    <Label htmlFor={`param-name-${param.id}`}>
+                                                        Parameter Name
+                                                    </Label>
+                                                    <Input
+                                                        id={`param-name-${param.id}`}
+                                                        value={param.name}
+                                                        onChange={(e) => 
+                                                            handleUpdateParameter(param.id, 'name', e.target.value)
+                                                        }
+                                                        placeholder="e.g. location"
+                                                        className={highlightedFields.includes(`param-name-${param.id}`) ? "border-red-500" : ""}
+                                                    />
                                                 </div>
-                                            )}
+                                                
+                                                <div className="space-y-2">
+                                                    <Label htmlFor={`param-type-${param.id}`}>Type</Label>
+                                                    <Select
+                                                        value={param.type}
+                                                        onValueChange={(value) => 
+                                                            handleUpdateParameter(param.id, 'type', value)
+                                                        }
+                                                    >
+                                                        <SelectTrigger id={`param-type-${param.id}`}>
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {PARAMETER_TYPES.map(type => (
+                                                                <SelectItem key={type} value={type}>
+                                                                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                                                                </SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="mt-4">
+                                                <div className="space-y-2">
+                                                    <Label htmlFor={`param-desc-${param.id}`}>
+                                                        Description
+                                                    </Label>
+                                                    <Input
+                                                        id={`param-desc-${param.id}`}
+                                                        value={param.description}
+                                                        onChange={(e) => 
+                                                            handleUpdateParameter(param.id, 'description', e.target.value)
+                                                        }
+                                                        placeholder="Describe the parameter"
+                                                        className={highlightedFields.includes(`param-desc-${param.id}`) ? "border-red-500" : ""}
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-center space-x-2 mt-4">
+                                                <Switch
+                                                    id={`param-required-${param.id}`}
+                                                    checked={param.required}
+                                                    onCheckedChange={(checked) => 
+                                                        handleUpdateParameter(param.id, 'required', checked)
+                                                    }
+                                                />
+                                                <Label htmlFor={`param-required-${param.id}`}>
+                                                    Required parameter
+                                                </Label>
+                                            </div>
                                         </div>
-                                    </CollapsibleContent>
-                                </Collapsible>
-                            ))}
-                        </div>
-                    </div>
-                </motion.div>
 
-                {/* JSON Preview */}
-                <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="space-y-6"
-                >
-                    <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                            <Label>JSON Tool Specification</Label>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={copyJsonToClipboard}
-                                className="gap-2"
-                            >
-                                <Copy className="h-4 w-4" />
-                                {copied ? "Copied!" : "Copy"}
-                            </Button>
+                                        <CollapsibleContent>
+                                            <div className="p-4 border-t space-y-4">
+                                                {/* Default value field - common for all types */}
+                                                <div className="space-y-2">
+                                                    <Label htmlFor={`param-default-${param.id}`}>Default Value (Optional)</Label>
+                                                    <Input
+                                                        id={`param-default-${param.id}`}
+                                                        value={param.default || ''}
+                                                        onChange={(e) => handleUpdateParameter(param.id, 'default', e.target.value)}
+                                                        placeholder="No default value"
+                                                    />
+                                                </div>
+                                                
+                                                {/* Type-specific configuration */}
+                                                {renderTypeSpecificFields(param)}
+                                                
+                                                {/* Parameter Dependencies */}
+                                                <ParameterDependency 
+                                                    parameter={param}
+                                                    allParameters={parameters}
+                                                    onUpdate={(deps) => handleUpdateParameterDependency(param.id, deps)}
+                                                />
+                                                
+                                                {parameters.length > 1 && (
+                                                    <div className="flex justify-end mt-4">
+                                                        <Button
+                                                            type="button"
+                                                            variant="destructive"
+                                                            size="sm"
+                                                            onClick={() => handleRemoveParameter(param.id)}
+                                                        >
+                                                            <Trash className="h-4 w-4 mr-1" />
+                                                            Remove Parameter
+                                                        </Button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </CollapsibleContent>
+                                    </Collapsible>
+                                ))}
+                            </div>
                         </div>
+                    </motion.div>
 
-                        <div className="rounded-md border bg-muted/50 p-4">
-                            <pre className="overflow-auto text-xs text-muted-foreground text-left max-h-[500px] whitespace-pre-wrap">
-                                {jsonPreview || "Complete the form to generate JSON"}
-                            </pre>
+                    {/* JSON Preview */}
+                    <motion.div
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="space-y-6"
+                    >
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                                <Label>JSON Tool Specification</Label>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={copyJsonToClipboard}
+                                    className="gap-2"
+                                >
+                                    <Copy className="h-4 w-4" />
+                                    {copied ? "Copied!" : "Copy"}
+                                </Button>
+                            </div>
+
+                            <div className="rounded-md border bg-muted/50 p-4">
+                                <pre className="overflow-auto text-xs text-muted-foreground text-left max-h-[500px] whitespace-pre-wrap">
+                                    {jsonPreview || "Complete the form to generate JSON"}
+                                </pre>
+                            </div>
+                            
+                            <p className="text-sm text-muted-foreground mt-2">
+                                This JSON can be used directly with Large Language Models to define the tool's functionality.
+                            </p>
+                        </div>
+                    </motion.div>
+                </div>
+
+                {/* Add Category Modal */}
+                <Dialog open={categoryModalOpen} onOpenChange={setCategoryModalOpen}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Add New Category</DialogTitle>
+                            <DialogDescription>
+                                Create a new category for organizing tools.
+                            </DialogDescription>
+                        </DialogHeader>
+                        
+                        <div className="space-y-4 py-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="new-category-name">Category Name</Label>
+                                <Input
+                                    id="new-category-name"
+                                    placeholder="Enter category name..."
+                                    value={newCategoryName}
+                                    onChange={(e) => setNewCategoryName(e.target.value)}
+                                    className={newCategoryError ? "border-red-500" : ""}
+                                />
+                                {newCategoryError && (
+                                    <p className="text-sm text-red-500">{newCategoryError}</p>
+                                )}
+                            </div>
                         </div>
                         
-                        <p className="text-sm text-muted-foreground mt-2">
-                            This JSON can be used directly with Large Language Models to define the tool's functionality.
-                        </p>
-                    </div>
-                </motion.div>
-            </div>
-        </motion.div>
+                        <DialogFooter>
+                            <Button 
+                                variant="outline" 
+                                onClick={() => {
+                                    setCategoryModalOpen(false);
+                                    setNewCategoryName("");
+                                    setNewCategoryError("");
+                                }}
+                            >
+                                Cancel
+                            </Button>
+                            <Button 
+                                onClick={handleAddCategory} 
+                                disabled={isSavingCategory || !newCategoryName.trim()}
+                            >
+                                {isSavingCategory ? "Adding..." : "Add Category"}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            </motion.div>
+            <ToastContainer toasts={toasts} />
+        </>
     );
 }

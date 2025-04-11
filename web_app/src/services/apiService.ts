@@ -2,6 +2,11 @@ import { Tool } from '../store/toolStore';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
+export interface Category {
+  id: string;
+  name: string;
+}
+
 /**
  * Helper function to handle API fetch requests with proper error handling
  */
@@ -47,7 +52,9 @@ const toolsApi = {
    * Get all tools from the API
    */
   getAll: async (): Promise<Record<string, Tool>> => {
-    return fetchWithErrorHandling<Record<string, Tool>>(`${API_URL}/tools`);
+    const response = await fetchWithErrorHandling<Record<string, Tool>>(`${API_URL}/tools`);
+    console.log('API response:', response); // Debugging log
+    return response;
   },
   
   /**
@@ -116,6 +123,33 @@ const toolsApi = {
     });
     
     return response.description;
+  },
+
+  /**
+   * Get all categories
+   */
+  getCategories: async (): Promise<Category[]> => {
+    return fetchWithErrorHandling<Category[]>(`${API_URL}/categories`);
+  },
+
+  /**
+   * Create a new category
+   */
+  createCategory: async (name: string): Promise<Category> => {
+    return fetchWithErrorHandling<Category>(`${API_URL}/categories`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    });
+  },
+
+  /**
+   * Delete a category
+   */
+  deleteCategory: async (id: string): Promise<void> => {
+    return fetchWithErrorHandling<void>(`${API_URL}/categories/${id}`, {
+      method: 'DELETE',
+    });
   },
 };
 

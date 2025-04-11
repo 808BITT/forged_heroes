@@ -26,7 +26,7 @@ export default function Navbar(): JSX.Element {
         <div className="flex justify-between items-center">
           <div className="flex items-center">
             <Link to="/" className="font-bold text-xl bg-gradient-to-r from-purple-600 to-blue-500 bg-clip-text text-transparent">
-              Tool Forge
+              Hero Forge
             </Link>
           </div>
           

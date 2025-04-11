@@ -18,6 +18,8 @@ export default function ArmoryPage() {
         return acc;
     }, {} as Record<string, typeof tools>);
 
+    const selectedToolParameters = tools.find(tool => tool.id === selectedTool)?.parameters || [];
+
     // Get unique categories
     const categories = Object.keys(toolsByCategory);
 
@@ -168,45 +170,27 @@ export default function ArmoryPage() {
                                 transition={{ duration: 0.4 }}
                                 className="space-y-4"
                             >
-                                {tools
-                                    .find(tool => tool.id === selectedTool)
-                                    ?.parameters.map((param) => (
-                                        <motion.div
-                                            key={param.id}
-                                            initial={{ opacity: 0, scale: 0.8 }}
-                                            animate={{ opacity: 1, scale: 1 }}
-                                            transition={{ duration: 0.3 }}
-                                            className="p-4 rounded-lg border bg-card hover:shadow-md transition-all"
-                                            whileHover={{ scale: 1.02, backgroundColor: 'rgba(var(--primary), 0.05)' }}
-                                        >
-                                            <div className="flex items-start">
-                                                <div className={`w-2 h-2 mt-2 rounded-full mr-2 ${param.required ? 'bg-green-500' : 'bg-gray-400'}`}></div>
-                                                <div>
-                                                    <div className="flex items-center">
-                                                        <h3 className="font-semibold">{param.name}</h3>
-                                                        <span className="ml-2 px-2 py-1 text-xs bg-secondary rounded-full">
-                                                            {param.type}
-                                                        </span>
-                                                        {param.required && (
-                                                            <span className="ml-2 px-2 py-1 text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded-full">
-                                                                Required
-                                                            </span>
-                                                        )}
-                                                        {!param.required && (
-                                                            <span className="ml-2 px-2 py-1 text-xs bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300 rounded-full">
-                                                                Optional
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    <p className="text-sm text-muted-foreground mt-1">
-                                                        {param.description || "No description provided"}
-                                                    </p>
-                                                </div>
+                                {selectedToolParameters.map((param) => (
+                                    <motion.div
+                                        key={param.id}
+                                        initial={{ opacity: 0, scale: 0.8 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        transition={{ duration: 0.3 }}
+                                        className="p-4 rounded-lg border bg-card hover:shadow-md transition-all"
+                                    >
+                                        <div className="flex items-start">
+                                            <div className={`w-2 h-2 mt-2 rounded-full mr-2 ${param.required ? 'bg-green-500' : 'bg-gray-400'}`}></div>
+                                            <div>
+                                                <h3 className="font-semibold">{param.name}</h3>
+                                                <p className="text-sm text-muted-foreground mt-1">
+                                                    {param.description || "No description provided"}
+                                                </p>
                                             </div>
-                                        </motion.div>
-                                    ))}
+                                        </div>
+                                    </motion.div>
+                                ))}
 
-                                {(tools.find(tool => tool.id === selectedTool)?.parameters.length || 0) === 0 && (
+                                {selectedToolParameters.length === 0 && (
                                     <div className="text-center py-8 text-muted-foreground">
                                         This tool has no parameters
                                     </div>

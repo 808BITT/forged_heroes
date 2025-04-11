@@ -15,6 +15,20 @@ jest.mock('../../store/toolStore', () => ({
   useToolStore: jest.fn(),
 }));
 
+// Mock the API service
+jest.mock('../../services/apiService', () => ({
+  getCategories: jest.fn().mockResolvedValue([
+    { id: 'cat-1', name: 'General' },
+    { id: 'cat-2', name: 'CLI' },
+    { id: 'cat-3', name: 'API' },
+    { id: 'cat-4', name: 'Data' }
+  ]),
+  createCategory: jest.fn().mockImplementation((name) => 
+    Promise.resolve({ id: `cat-new-${Date.now()}`, name })
+  ),
+  // ...other mocked methods
+}));
+
 describe('ToolEditor', () => {
   // Setup mock store
   const mockAddTool = jest.fn().mockResolvedValue('new-tool-id');
@@ -26,7 +40,7 @@ describe('ToolEditor', () => {
     // Reset mocks
     jest.clearAllMocks();
     
-    (useToolStore as jest.Mock).mockReturnValue({
+    (useToolStore as unknown as jest.Mock).mockReturnValue({
       getToolById: mockGetToolById,
       addTool: mockAddTool,
       updateTool: mockUpdateTool,
@@ -49,7 +63,7 @@ describe('ToolEditor', () => {
     expect(screen.getByLabelText('Tool Description')).toBeInTheDocument();
     
     // Ensure "Category" label is associated with a form control
-    expect(screen.getByLabelText(/Category/i)).toBeInTheDocument();
+    expect(screen.getByText(/Category/i)).toBeInTheDocument();
     
     // Should have at least one parameter by default
     expect(screen.getByText(/Parameter 1/i)).toBeInTheDocument();
@@ -74,45 +88,45 @@ describe('ToolEditor', () => {
 
   test('submits new tool when form is valid', async () => {
     render(
-      <BrowserRouter>
-        <ToolEditor />
-      </BrowserRouter>
+        <BrowserRouter>
+            <ToolEditor />
+        </BrowserRouter>
     );
-    
+
     // Fill out the form
     fireEvent.change(screen.getByLabelText(/Tool Name/i), {
-      target: { value: 'Test Tool' },
+        target: { value: 'Test Tool' },
     });
-    
+
     fireEvent.change(screen.getByLabelText('Tool Description'), {
-      target: { value: 'New tool description' },
+        target: { value: 'New tool description' },
     });
-    
+
     // Fill out parameter name and description
     const paramNameInput = screen.getByPlaceholderText('e.g. location');
     fireEvent.change(paramNameInput, {
-      target: { value: 'testParam' },
+        target: { value: 'testParam' },
     });
-    
+
     const paramDescInput = screen.getByPlaceholderText('Describe the parameter');
     fireEvent.change(paramDescInput, {
-      target: { value: 'Test parameter description' },
+        target: { value: 'Test parameter description' },
     });
-    
+
     // Click save button
     fireEvent.click(screen.getByText(/Save/i));
-    
+
     await waitFor(() => {
-      expect(mockAddTool).toHaveBeenCalledWith(expect.objectContaining({
-        name: 'Test Tool',
-        description: 'New tool description',
-        parameters: expect.arrayContaining([
-          expect.objectContaining({
-            name: 'testParam',
-            description: 'Test parameter description',
-          }),
-        ]),
-      }));
+        expect(mockAddTool).toHaveBeenCalledWith(expect.objectContaining({
+            name: 'Test Tool',
+            description: 'New tool description',
+            parameters: expect.arrayContaining([
+                expect.objectContaining({
+                    name: 'testParam',
+                    description: 'Test parameter description',
+                }),
+            ]),
+        }));
     });
   });
 
@@ -139,6 +153,32 @@ describe('ToolEditor', () => {
     await waitFor(() => {
       expect(parseFunctionSignature).toHaveBeenCalledWith('function testFunction(param1: string)');
       expect(generateDescription).toHaveBeenCalledWith('function testFunction(param1: string)');
+    });
+  });
+
+  test("can add a new category", async () => {
+    render(<ToolEditor />);
+    
+    // Wait for categories to load
+    await waitFor(() => {
+      expect(screen.getByText(/Category/i)).toBeInTheDocument();
+    });
+    
+    // Click add category button
+    const addButton = screen.getByText(/Add Category/i);
+    fireEvent.click(addButton);
+    
+    // Enter new category name
+    const input = screen.getByLabelText(/Category Name/i);
+    fireEvent.change(input, { target: { value: 'New Test Category' } });
+    
+    // Submit the form
+    const submitButton = screen.getByRole('button', { name: /Add Category$/i });
+    fireEvent.click(submitButton);
+    
+    // Wait for toast notification
+    await waitFor(() => {
+      expect(screen.getByText(/Category added/i)).toBeInTheDocument();
     });
   });
 });

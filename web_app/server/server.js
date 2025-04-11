@@ -39,12 +39,14 @@ const swaggerDocs = swaggerJsDoc(swaggerOptions);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 // Update SQLite database initialization to use a file-based database
-const DB_PATH = path.join(__dirname, 'data', 'tools.db');
+const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'data', 'tools.db');
 const db = new sqlite3.Database(DB_PATH, (err) => {
   if (err) {
     console.error('Error opening database:', err);
   } else {
     console.log(`Connected to SQLite database at ${DB_PATH}`);
+    
+    // Create tools table
     db.run(`CREATE TABLE IF NOT EXISTS tools (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
@@ -56,6 +58,40 @@ const db = new sqlite3.Database(DB_PATH, (err) => {
     )`, (err) => {
       if (err) {
         console.error('Error creating tools table:', err);
+      } else {
+        console.log('Tools table created or already exists');
+      }
+    });
+
+    // Create categories table
+    db.run(`CREATE TABLE IF NOT EXISTS categories (
+      id TEXT PRIMARY KEY,
+      name TEXT UNIQUE NOT NULL
+    )`, (err) => {
+      if (err) {
+        console.error('Error creating categories table:', err);
+      } else {
+        console.log('Categories table created or already exists');
+        
+        // Insert default categories if table is empty
+        db.get("SELECT COUNT(*) as count FROM categories", (err, row) => {
+          if (err) {
+            console.error('Error checking categories count:', err);
+            return;
+          }
+          
+          if (row.count === 0) {
+            const defaultCategories = ['General', 'CLI', 'API', 'Data'];
+            const stmt = db.prepare("INSERT INTO categories (id, name) VALUES (?, ?)");
+            
+            defaultCategories.forEach(category => {
+              stmt.run(`cat_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`, category);
+            });
+            
+            stmt.finalize();
+            console.log('Default categories inserted');
+          }
+        });
       }
     });
   }
@@ -88,7 +124,6 @@ async function loadTools() {
           };
           return acc;
         }, {});
-        // console.log('Loaded tools from database:', tools); // Log loaded tools
         resolve(tools);
       }
     });
@@ -148,10 +183,19 @@ async function deleteTool(id) {
  */
 app.get('/api/tools', async (req, res) => {
   try {
-    const tools = await loadTools();
-    res.json(tools);
+    const db = new sqlite3.Database(DB_PATH);
+    db.all('SELECT * FROM tools', (err, rows) => {
+      if (err) {
+        console.error('Database query error:', err);
+        return res.status(500).json({ error: 'Failed to fetch tools' });
+      }
+      console.log('Database query result:', rows); // Debugging log
+      res.json(rows);
+    });
+    db.close();
   } catch (error) {
-    res.status(500).json({ message: 'Failed to retrieve tools' });
+    console.error('API error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -175,16 +219,23 @@ app.get('/api/tools', async (req, res) => {
  */
 app.get('/api/tools/:id', async (req, res) => {
   try {
-    const tools = await loadTools();
-    const tool = tools[req.params.id];
-    
-    if (!tool) {
-      return res.status(404).json({ message: 'Tool not found' });
-    }
-    
-    res.json(tool);
+    const { id } = req.params;
+    db.get('SELECT * FROM tools WHERE id = ?', [id], (err, row) => {
+      if (err) {
+        console.error('Database query error:', err);
+        return res.status(500).json({ error: 'Failed to fetch tool' });
+      }
+      if (!row) {
+        return res.status(404).json({ message: 'Tool not found' });
+      }
+      res.json({
+        ...row,
+        parameters: JSON.parse(row.parameters), // Parse parameters from JSON
+      });
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Failed to retrieve tool' });
+    console.error('API error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -255,6 +306,58 @@ app.delete('/api/tools/:id', async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: 'Failed to delete tool' });
   }
+});
+
+// Add API endpoints for categories
+app.get('/api/categories', (req, res) => {
+  db.all("SELECT * FROM categories ORDER BY name", (err, rows) => {
+    if (err) {
+      console.error('Error fetching categories:', err);
+      return res.status(500).json({ error: 'Failed to fetch categories' });
+    }
+    
+    res.json(rows);
+  });
+});
+
+app.post('/api/categories', (req, res) => {
+  const { name } = req.body;
+  
+  if (!name) {
+    return res.status(400).json({ error: 'Category name is required' });
+  }
+  
+  const id = `cat_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+  
+  db.run("INSERT INTO categories (id, name) VALUES (?, ?)", [id, name], function(err) {
+    if (err) {
+      if (err.message.includes('UNIQUE constraint failed')) {
+        return res.status(409).json({ error: 'Category already exists' });
+      }
+      console.error('Error creating category:', err);
+      return res.status(500).json({ error: 'Failed to create category' });
+    }
+    
+    res.status(201).json({ id, name });
+  });
+});
+
+// Optional: endpoint to delete a category
+app.delete('/api/categories/:id', (req, res) => {
+  const { id } = req.params;
+  
+  db.run("DELETE FROM categories WHERE id = ?", [id], function(err) {
+    if (err) {
+      console.error('Error deleting category:', err);
+      return res.status(500).json({ error: 'Failed to delete category' });
+    }
+    
+    if (this.changes === 0) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+    
+    res.status(200).json({ message: 'Category deleted successfully' });
+  });
 });
 
 // New route to parse function signature

@@ -15,12 +15,14 @@ import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
 import { useToolStore } from './store/toolStore';
 import ErrorBoundary from './components/ErrorBoundary';
+import { useToast, ToastContainer } from "./components/ui/use-toast";
 
 function App() {
   const loadToolSpecifications = useToolStore(state => state.loadToolSpecifications);
   const isLoaded = useToolStore(state => state.isLoaded);
   const isLoading = useToolStore(state => state.isLoading);
   const error = useToolStore(state => state.error);
+  const { toasts, addToast } = useToast();
 
   // Load tool specifications on app initialization
   useEffect(() => {
@@ -50,6 +52,8 @@ function App() {
                 </div>
               </div>
             )}
+
+            <ToastContainer toasts={toasts} />
 
             <Routes>
               <Route path="/" element={

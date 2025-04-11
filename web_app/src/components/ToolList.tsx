@@ -18,7 +18,7 @@ export default function ToolList({ hideHeader = false }: ToolListProps) {
     const isLoaded = useToolStore((state) => state.isLoaded);
     const isLoading = useToolStore((state) => state.isLoading);
     const [searchTerm, setSearchTerm] = useState("");
-    
+
     useEffect(() => {
         if (!isLoaded) {
             loadToolSpecifications();

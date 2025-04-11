@@ -66,6 +66,7 @@ export const useToolStore = create<ToolState>()((set, get) => ({
         try {
             set({ isLoading: true, error: null });
             const fetchedTools = await toolsApi.getAll();
+            console.log('Fetched tools:', fetchedTools); // Debugging log
             set({
                 tools: fetchedTools,
                 isLoading: false,
