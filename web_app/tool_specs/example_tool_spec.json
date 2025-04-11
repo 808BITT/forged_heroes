@@ -1,0 +1,34 @@
+{
+  "name": "Example Tool",
+  "description": "An example tool specification to demonstrate format",
+  "version": "1.0.0",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "input": {
+        "type": "string",
+        "description": "Input text to process"
+      },
+      "option": {
+        "type": "string",
+        "description": "Processing option",
+        "enum": ["option1", "option2", "option3"],
+        "default": "option1"
+      }
+    },
+    "required": ["input"]
+  },
+  "returns": {
+    "type": "object",
+    "properties": {
+      "result": {
+        "type": "string",
+        "description": "Processed result"
+      },
+      "processingTime": {
+        "type": "number",
+        "description": "Time taken to process input (ms)"
+      }
+    }
+  }
+}

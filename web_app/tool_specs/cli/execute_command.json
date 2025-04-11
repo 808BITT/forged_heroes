@@ -1,0 +1,44 @@
+{
+  "name": "Execute Command",
+  "description": "Execute a command on the local system",
+  "version": "1.0.0",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "command": {
+        "type": "string",
+        "description": "The command to execute"
+      },
+      "args": {
+        "type": "array",
+        "description": "Command arguments",
+        "items": {
+          "type": "string"
+        }
+      },
+      "cwd": {
+        "type": "string",
+        "description": "Working directory for the command",
+        "default": "./"
+      }
+    },
+    "required": ["command"]
+  },
+  "returns": {
+    "type": "object",
+    "properties": {
+      "stdout": {
+        "type": "string",
+        "description": "Standard output from command execution"
+      },
+      "stderr": {
+        "type": "string",
+        "description": "Standard error from command execution"
+      },
+      "exitCode": {
+        "type": "number",
+        "description": "Exit code from command execution"
+      }
+    }
+  }
+}
