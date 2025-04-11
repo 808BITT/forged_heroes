@@ -57,7 +57,7 @@ export const loadToolSpecs = async (): Promise<Record<string, Tool>> => {
         // Process each spec
         specs.forEach(({ spec, id, category }) => {
             // Only process valid specs with function property
-            if (spec && spec.function && spec.function.name) {
+            if (spec && (spec as any).function && (spec as any).function.name) {
                 tools[id] = convertSpecToTool(spec, id, category);
             }
         });
@@ -74,14 +74,16 @@ export const loadToolSpecs = async (): Promise<Record<string, Tool>> => {
  */
 export function parseFunctionSignature(signature: string) {
     try {
-        // Basic regex pattern to extract function name and parameters
-        const functionRegex = /function\s+([a-zA-Z0-9_]+)\s*\((.*)\)/;
-        const arrowFunctionRegex = /(?:const|let|var)?\s*([a-zA-Z0-9_]+)\s*=\s*(?:\(.*\)|[a-zA-Z0-9_]+)\s*=>\s*{/;
+        // Extended regex patterns to cover more JavaScript function types
+        const functionRegex = /function\s+([a-zA-Z0-9_]+)\s*\(([^)]*)\)/; // Regular function
+        const arrowFunctionRegex = /(?:const|let|var)?\s*([a-zA-Z0-9_]+)\s*=\s*\(([^)]*)\)\s*=>/; // Arrow function
+        const asyncFunctionRegex = /async\s+function\s+([a-zA-Z0-9_]+)\s*\(([^)]*)\)/; // Async function
+        const methodRegex = /([a-zA-Z0-9_]+)\s*\(([^)]*)\)\s*{/; // Object or class method
 
-        let matches = signature.match(functionRegex);
-        if (!matches) {
-            matches = signature.match(arrowFunctionRegex);
-        }
+        let matches = signature.match(functionRegex) ||
+                      signature.match(arrowFunctionRegex) ||
+                      signature.match(asyncFunctionRegex) ||
+                      signature.match(methodRegex);
 
         if (!matches) {
             console.warn('Could not parse function signature:', signature);
@@ -130,6 +132,7 @@ function mapTypeToSchema(tsType: string): string {
             return 'object';
         case 'array':
         case 'any[]':
+        case 'object[]':
             return 'array';
         case 'date':
             return 'string';

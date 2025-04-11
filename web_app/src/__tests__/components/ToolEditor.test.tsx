@@ -3,6 +3,7 @@ import { BrowserRouter } from 'react-router-dom';
 import ToolEditor from '../../components/ToolEditor';
 import { useToolStore } from '../../store/toolStore';
 import { parseFunctionSignature, generateDescription } from '../../services/toolSpecService';
+import toolsApi from '../../services/apiService'; // Import the actual apiService
 
 // Mock the services
 jest.mock('../../services/toolSpecService', () => ({
@@ -23,10 +24,13 @@ jest.mock('../../services/apiService', () => ({
     { id: 'cat-3', name: 'API' },
     { id: 'cat-4', name: 'Data' }
   ]),
-  createCategory: jest.fn().mockImplementation((name) => 
+  createCategory: jest.fn().mockImplementation((name) =>
     Promise.resolve({ id: `cat-new-${Date.now()}`, name })
   ),
-  // ...other mocked methods
+  getAll: jest.fn(),
+  create: jest.fn(),
+  update: jest.fn(),
+  delete: jest.fn(),
 }));
 
 describe('ToolEditor', () => {
@@ -35,11 +39,11 @@ describe('ToolEditor', () => {
   const mockUpdateTool = jest.fn().mockResolvedValue(undefined);
   const mockDeleteTool = jest.fn().mockResolvedValue(undefined);
   const mockGetToolById = jest.fn();
-  
+
   beforeEach(() => {
     // Reset mocks
     jest.clearAllMocks();
-    
+
     (useToolStore as unknown as jest.Mock).mockReturnValue({
       getToolById: mockGetToolById,
       addTool: mockAddTool,
@@ -56,15 +60,14 @@ describe('ToolEditor', () => {
         <ToolEditor />
       </BrowserRouter>
     );
-    
     // Check that the form loads with proper title and default fields
     expect(screen.getByText(/Create Tool/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Tool Name/i)).toBeInTheDocument();
     expect(screen.getByLabelText('Tool Description')).toBeInTheDocument();
-    
+
     // Ensure "Category" label is associated with a form control
     expect(screen.getByText(/Category/i)).toBeInTheDocument();
-    
+
     // Should have at least one parameter by default
     expect(screen.getByText(/Parameter 1/i)).toBeInTheDocument();
   });
@@ -75,58 +78,58 @@ describe('ToolEditor', () => {
         <ToolEditor />
       </BrowserRouter>
     );
-    
+
     // Initially, there should be one parameter
     expect(screen.getAllByText(/Parameter Name/i).length).toBe(1);
-    
+
     // Click "Add Parameter" button
     fireEvent.click(screen.getByText('Add Parameter'));
-    
+
     // Now there should be two parameters
     expect(screen.getAllByText(/Parameter Name/i).length).toBe(2);
   });
 
   test('submits new tool when form is valid', async () => {
     render(
-        <BrowserRouter>
-            <ToolEditor />
-        </BrowserRouter>
+      <BrowserRouter>
+        <ToolEditor />
+      </BrowserRouter>
     );
 
     // Fill out the form
     fireEvent.change(screen.getByLabelText(/Tool Name/i), {
-        target: { value: 'Test Tool' },
+      target: { value: 'Test Tool' },
     });
 
     fireEvent.change(screen.getByLabelText('Tool Description'), {
-        target: { value: 'New tool description' },
+      target: { value: 'New tool description' },
     });
 
     // Fill out parameter name and description
     const paramNameInput = screen.getByPlaceholderText('e.g. location');
     fireEvent.change(paramNameInput, {
-        target: { value: 'testParam' },
+      target: { value: 'testParam' },
     });
 
     const paramDescInput = screen.getByPlaceholderText('Describe the parameter');
     fireEvent.change(paramDescInput, {
-        target: { value: 'Test parameter description' },
+      target: { value: 'Test parameter description' },
     });
 
     // Click save button
     fireEvent.click(screen.getByText(/Save/i));
 
     await waitFor(() => {
-        expect(mockAddTool).toHaveBeenCalledWith(expect.objectContaining({
-            name: 'Test Tool',
-            description: 'New tool description',
-            parameters: expect.arrayContaining([
-                expect.objectContaining({
-                    name: 'testParam',
-                    description: 'Test parameter description',
-                }),
-            ]),
-        }));
+      expect(mockAddTool).toHaveBeenCalledWith(expect.objectContaining({
+        name: 'Test Tool',
+        description: 'New tool description',
+        parameters: expect.arrayContaining([
+          expect.objectContaining({
+            name: 'testParam',
+            description: 'Test parameter description',
+          }),
+        ]),
+      }));
     });
   });
 
@@ -136,46 +139,55 @@ describe('ToolEditor', () => {
       name: 'testFunction',
       params: [{ name: 'param1', type: 'string' }],
     });
-    
+
     (generateDescription as jest.Mock).mockResolvedValue('Auto-generated description');
-    
+
     render(
       <BrowserRouter>
         <ToolEditor />
       </BrowserRouter>
     );
-    
+
     // Input a function signature
     fireEvent.change(screen.getByLabelText(/Function Signature/i), {
       target: { value: 'function testFunction(param1: string)' },
     });
-    
+
     await waitFor(() => {
       expect(parseFunctionSignature).toHaveBeenCalledWith('function testFunction(param1: string)');
       expect(generateDescription).toHaveBeenCalledWith('function testFunction(param1: string)');
+      expect((screen.getByLabelText(/Tool Name/i) as HTMLInputElement).value).toBe('testFunction');
     });
   });
 
   test("can add a new category", async () => {
-    render(<ToolEditor />);
-    
+    (toolsApi.createCategory as jest.Mock).mockImplementation((name) =>
+      Promise.resolve({ id: `cat-new-${Date.now()}`, name })
+    );
+
+    render(
+      <BrowserRouter>
+        <ToolEditor />
+      </BrowserRouter>
+    );
+
     // Wait for categories to load
     await waitFor(() => {
-      expect(screen.getByText(/Category/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/Category/i)[0]).toBeInTheDocument();
     });
-    
+
     // Click add category button
     const addButton = screen.getByText(/Add Category/i);
     fireEvent.click(addButton);
-    
+
     // Enter new category name
     const input = screen.getByLabelText(/Category Name/i);
     fireEvent.change(input, { target: { value: 'New Test Category' } });
-    
+
     // Submit the form
     const submitButton = screen.getByRole('button', { name: /Add Category$/i });
     fireEvent.click(submitButton);
-    
+
     // Wait for toast notification
     await waitFor(() => {
       expect(screen.getByText(/Category added/i)).toBeInTheDocument();

@@ -1,6 +1,23 @@
 import { Tool } from '../store/toolStore';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+// Create a getApiUrl function to handle both Vite and Jest environments
+const getApiUrl = () => {
+  try {
+    // For Vite environment
+    if (typeof import.meta.env !== 'undefined') {
+      return import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+    }
+  } catch (e) {
+    // For Jest environment
+    return 'http://localhost:3001/api';
+  }
+  
+  // Default fallback
+  return 'http://localhost:3001/api';
+};
+
+// Initialize API_URL using the helper function
+const API_URL = getApiUrl();
 
 export interface Category {
   id: string;

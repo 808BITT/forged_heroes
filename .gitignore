@@ -29,3 +29,5 @@ dist-ssr
 *.sln
 *.sw?
 web_app/.vite
+web_app/coverage
+web_app/test-results.json
