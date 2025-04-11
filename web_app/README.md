@@ -1,12 +1,12 @@
-# Forge2: LLM Tool Specification Builder
+# Forge: LLM Tool Specification Builder
 
-![Forge2 Logo](public/forge2-logo.svg)
+![Forge Logo](public/forge-logo.svg)
 
-Forge2 is a modern web application for creating, managing, and sharing tool specifications for Large Language Models (LLMs). It provides an intuitive interface for building function calling specifications that can be used with LLMs like GPT-4 to give them access to external tools and APIs.
+Forge is a modern web application for creating, managing, and sharing tool specifications for Large Language Models (LLMs). It provides an intuitive interface for building function calling specifications that can be used with LLMs like GPT-4 to give them access to external tools and APIs.
 
 ## Purpose
 
-Equip your "LLM Heroes" with powerful tools! Forge2 makes it easy to define structured JSON tool specifications that can be copy-pasted into LLM prompts, enabling models to request specific actions through function calling.
+Equip your "LLM Heroes" with powerful tools! Forge makes it easy to define structured JSON tool specifications that can be copy-pasted into LLM prompts, enabling models to request specific actions through function calling.
 
 ## Features
 
@@ -17,12 +17,14 @@ Equip your "LLM Heroes" with powerful tools! Forge2 makes it easy to define stru
 - **The Armory**: Interactive visualization of tool schemas with fluid animations and category-based exploration
 - **API Backend**: Store tools persistently on a server for sharing and reuse
 - **Responsive Design**: Works on desktop and mobile devices
+- **Tool Testing**: Test your tool specifications against a mock LLM to ensure they function as expected
+- **Parameter Dependencies**: Define dependencies between parameters, so that the visibility and requirements of one parameter can depend on the value of another.
 
 ## Technology Stack
 
-- **Frontend**: React, TypeScript, Vite, Tailwind CSS, Zustand
-- **Backend**: Node.js, Express
-- **Styling**: TailwindCSS with shadcn/ui components
+- **Frontend**: React, TypeScript, Vite, Tailwind CSS, Zustand, Radix UI
+- **Backend**: Node.js, Express (under development)
+- **Styling**: TailwindCSS with Radix UI components
 - **State Management**: Zustand
 - **Animation**: Framer Motion
 - **Routing**: React Router
@@ -38,8 +40,8 @@ Equip your "LLM Heroes" with powerful tools! Forge2 makes it easy to define stru
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/yourusername/forge2.git
-   cd forge2/web_app
+   git clone https://github.com/yourusername/forge.git
+   cd forge/web_app
    ```
 
 2. Install frontend dependencies:
@@ -48,24 +50,9 @@ Equip your "LLM Heroes" with powerful tools! Forge2 makes it easy to define stru
    npm install
    ```
 
-3. Install backend dependencies:
-
-   ```bash
-   cd server
-   npm install
-   cd ..
-   ```
-
 ### Running the Application
 
-1. Start the backend server:
-
-   ```bash
-   cd server
-   node server.js
-   ```
-
-2. In a new terminal, start the frontend development server:
+1. Start the frontend development server:
 
    ```bash
    npm run dev
@@ -89,8 +76,10 @@ Equip your "LLM Heroes" with powerful tools! Forge2 makes it easy to define stru
    - Type (string, number, boolean, object, array)
    - Description
    - Whether it's required
+   - Define dependencies on other parameters, if needed
 5. Click "Save" to store your tool
 6. Use the "Copy" button to copy the JSON specification for use with an LLM
+7. Use the "Test" button to test your tool against a mock LLM
 
 ### Using the Armory
 
@@ -137,12 +126,12 @@ The Armory provides an interactive, visually engaging way to explore your tool c
 ```
 web_app/
 ├── public/              # Static assets
-├── server/              # Backend API server
+├── server/              # Backend API server (under development)
 │   ├── data/            # Tool storage
 │   └── server.js        # Express server
 ├── src/
 │   ├── components/      # React components
-│   │   ├── ui/          # UI components
+│   │   ├── ui/          # UI components (Radix UI)
 │   │   └── layout/      # Layout components
 │   ├── pages/           # Page components
 │   ├── services/        # API services
@@ -156,8 +145,10 @@ web_app/
 - User authentication and profiles
 - Sharing tools between users
 - Tool versioning and history
-- Tool testing and validation
 - Integration with popular LLM platforms
+- Enhanced tool testing and validation features
+- More sophisticated parameter dependency options
+- Backend API implementation
 
 ## License
 

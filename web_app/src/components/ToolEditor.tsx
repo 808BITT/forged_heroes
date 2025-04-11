@@ -402,7 +402,7 @@ export default function ToolEditor() {
                                 <SelectValue placeholder="No format restriction" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="">None</SelectItem>
+                                <SelectItem value="none">None</SelectItem>
                                 <SelectItem value="email">Email</SelectItem>
                                 <SelectItem value="uri">URI</SelectItem>
                                 <SelectItem value="date-time">Date-Time</SelectItem>

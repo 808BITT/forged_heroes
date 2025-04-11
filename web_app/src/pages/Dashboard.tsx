@@ -41,7 +41,7 @@ export default function Dashboard(): JSX.Element {
             </p>
           </CardContent>
         </Card>
-        {/* <Card>
+        <Card>
           <CardHeader className="pb-2">
             <CardTitle>Active Tools</CardTitle>
             <CardDescription>Tools currently in use</CardDescription>
@@ -54,7 +54,7 @@ export default function Dashboard(): JSX.Element {
                 : 'No tools created yet'}
             </p>
           </CardContent>
-        </Card> */}
+        </Card>
         <Card>
           <CardHeader className="pb-2">
             <CardTitle>Recently Updated</CardTitle>
@@ -70,9 +70,9 @@ export default function Dashboard(): JSX.Element {
       </div>
 
       {/* Tool List */}
-      <div className="mt-8">
+      {/* <div className="mt-8">
         <ToolList />
-      </div>
+      </div> */}
     </div>
   );
 }

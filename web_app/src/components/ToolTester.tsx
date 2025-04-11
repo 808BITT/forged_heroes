@@ -359,30 +359,44 @@ export const ToolTester = ({ toolSpec, buttonVariant = "outline", className = ""
         <div className="mt-4">
           <h3 className="text-sm font-medium">Input Parameters</h3>
           
-          {toolSpec.function.parameters && toolSpec.function.parameters.properties ? (
-            <div className="mt-2 space-y-4">
-              {Object.entries<any>(toolSpec.function.parameters.properties).map(([key, param]) => {
-                const isRequired = toolSpec.function.parameters.required?.includes(key);
-                return (
-                  <div key={key} className="grid grid-cols-3 gap-2">
-                    <div className="col-span-1">
-                      <label className="block text-sm font-medium">
-                        {key}
-                        {isRequired && <span className="text-red-500 ml-1">*</span>}
-                      </label>
-                      <span className="text-xs text-muted-foreground block mt-1">
-                        {param.description || `Type: ${param.type}`}
-                      </span>
-                    </div>
-                    <div className="col-span-2">
-                      {renderInputField(key, param)}
-                    </div>
+          {toolSpec?.function && (
+            <>
+              <div className="grid w-full gap-2">
+                {toolSpec.function.description && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Description</p>
+                    <p>{toolSpec.function.description}</p>
                   </div>
-                );
-              })}
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground mt-2">No parameters defined</p>
+                )}
+              </div>
+              <div className="grid w-full items-center gap-4">
+                {toolSpec.function.parameters && toolSpec.function.parameters.properties ? (
+                  <>
+                    {Object.entries<any>(toolSpec.function.parameters.properties).map(([key, param]) => {
+                      const isRequired = toolSpec.function.parameters.required?.includes(key);
+                      return (
+                        <div key={key} className="grid grid-cols-3 gap-2">
+                          <div className="col-span-1">
+                            <label className="block text-sm font-medium">
+                              {key}
+                              {isRequired && <span className="text-red-500 ml-1">*</span>}
+                            </label>
+                            <span className="text-xs text-muted-foreground block mt-1">
+                              {param.description || `Type: ${param.type}`}
+                            </span>
+                          </div>
+                          <div className="col-span-2">
+                            {renderInputField(key, param)}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </>
+                ) : (
+                  <p className="text-sm text-muted-foreground mt-2">No parameters defined</p>
+                )}
+              </div>
+            </>
           )}
         </div>
         

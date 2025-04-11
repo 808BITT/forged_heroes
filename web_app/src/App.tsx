@@ -9,6 +9,10 @@ import ArmoryPage from './pages/ArmoryPage';
 import Dashboard from './pages/Dashboard';
 import HomePage from './pages/HomePage';
 import ToolsPage from './pages/ToolsPage';
+import Documentation from './pages/Documentation';
+import Support from './pages/Support';
+import Privacy from './pages/Privacy';
+import Terms from './pages/Terms';
 import { useToolStore } from './store/toolStore';
 
 function App() {
@@ -50,6 +54,10 @@ function App() {
             <Route path="/tools/new" element={<ToolEditor />} />
             <Route path="/tools/:id" element={<ToolEditor />} />
             <Route path="/armory" element={<ArmoryPage />} />
+            <Route path="/documentation" element={<Documentation />} />
+            <Route path="/support" element={<Support />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Terms />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </MainLayout>
