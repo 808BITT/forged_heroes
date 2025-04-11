@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
-import { Link } from 'react-router-dom';
+// import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
-import { Button } from '../components/ui/button';
+// import { Button } from '../components/ui/button';
 import { useToolStore } from '../store/toolStore';
 import ToolList from '../components/ToolList';
 
@@ -22,9 +22,9 @@ export default function Dashboard(): JSX.Element {
     <div className="space-y-8">
       <div className="flex flex-wrap justify-between items-center gap-4">
         <h1 className="text-3xl font-bold">Dashboard</h1>
-        <Button asChild>
+        {/* <Button asChild>
           <Link to="/tools/new">Create New Tool</Link>
-        </Button>
+        </Button> */}
       </div>
 
       {/* Tool Cards */}
@@ -41,7 +41,7 @@ export default function Dashboard(): JSX.Element {
             </p>
           </CardContent>
         </Card>
-        <Card>
+        {/* <Card>
           <CardHeader className="pb-2">
             <CardTitle>Active Tools</CardTitle>
             <CardDescription>Tools currently in use</CardDescription>
@@ -54,7 +54,7 @@ export default function Dashboard(): JSX.Element {
                 : 'No tools created yet'}
             </p>
           </CardContent>
-        </Card>
+        </Card> */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle>Recently Updated</CardTitle>

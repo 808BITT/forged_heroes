@@ -6,6 +6,8 @@ const swaggerJsDoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
 const fs = require('fs').promises;
 const path = require('path');
+const validateToolSpec = require('./validation/toolSchema');
+const Ajv = require('ajv');
 
 // Initialize express
 const app = express();
@@ -86,7 +88,7 @@ async function loadTools() {
           };
           return acc;
         }, {});
-        console.log('Loaded tools from database:', tools); // Log loaded tools
+        // console.log('Loaded tools from database:', tools); // Log loaded tools
         resolve(tools);
       }
     });
@@ -189,15 +191,20 @@ app.get('/api/tools/:id', async (req, res) => {
 // Create a new tool
 app.post('/api/tools', async (req, res) => {
   try {
+    const isValid = validateToolSpec(req.body);
+    if (!isValid) {
+      return res.status(400).json({ message: 'Invalid tool specification', errors: validateToolSpec.errors });
+    }
+
     const id = uuidv4();
     const newTool = {
       ...req.body,
       id,
       lastModified: new Date().toISOString()
     };
-    
+
     await saveTool(newTool);
-    
+
     res.status(201).json(newTool);
   } catch (error) {
     res.status(500).json({ message: 'Failed to create tool' });
@@ -207,20 +214,25 @@ app.post('/api/tools', async (req, res) => {
 // Update a tool
 app.put('/api/tools/:id', async (req, res) => {
   try {
+    const isValid = validateToolSpec(req.body);
+    if (!isValid) {
+      return res.status(400).json({ message: 'Invalid tool specification', errors: validateToolSpec.errors });
+    }
+
     const { id } = req.params;
     const tools = await loadTools();
-    
+
     if (!tools[id]) {
       return res.status(404).json({ message: 'Tool not found' });
     }
-    
+
     const updatedTool = {
       ...tools[id],
       ...req.body,
       id,
       lastModified: new Date().toISOString()
     };
-    
+
     await saveTool(updatedTool);
     res.json(updatedTool);
   } catch (error) {
@@ -266,6 +278,116 @@ app.post('/api/generateDescription', async (req, res) => {
     res.status(500).json({ message: 'Failed to generate description' });
   }
 });
+
+/**
+ * @swagger
+ * /api/test-tool:
+ *   post:
+ *     summary: Test a tool specification with sample input
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               toolSpec:
+ *                 type: object
+ *               testInput:
+ *                 type: object
+ *     responses:
+ *       200:
+ *         description: Test results
+ *       400:
+ *         description: Invalid request or validation error
+ */
+app.post('/api/test-tool', (req, res) => {
+  try {
+    const { toolSpec, testInput } = req.body;
+
+    if (!toolSpec || !testInput) {
+      return res.status(400).json({
+        success: false,
+        message: 'Both toolSpec and testInput are required',
+      });
+    }
+
+    // Validate toolSpec structure
+    const isValidToolSpec = validateToolSpec(toolSpec);
+    if (!isValidToolSpec) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid tool specification',
+        validationErrors: validateToolSpec.errors,
+      });
+    }
+
+    // Validate testInput against toolSpec parameters
+    const inputSchema = {
+      type: 'object',
+      properties: toolSpec.function.parameters.properties,
+      required: toolSpec.function.parameters.required || [],
+    };
+
+    const ajv = new Ajv();
+    const validateInput = ajv.compile(inputSchema);
+    const isValidInput = validateInput(testInput);
+
+    if (!isValidInput) {
+      return res.json({
+        success: false,
+        validationErrors: validateInput.errors,
+        message: 'Input validation failed',
+      });
+    }
+
+    // Generate mock result
+    const mockResult = generateMockResult(toolSpec.function.returns);
+
+    return res.json({
+      success: true,
+      message: 'Input validation successful',
+      result: mockResult,
+    });
+  } catch (error) {
+    console.error('Error testing tool:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error testing tool',
+      error: error.message,
+    });
+  }
+});
+
+// Helper function to generate mock results based on the return schema
+function generateMockResult(returnSchema) {
+  const result = {};
+  
+  if (returnSchema && returnSchema.properties) {
+    for (const [key, prop] of Object.entries(returnSchema.properties)) {
+      switch (prop.type) {
+        case 'string':
+          result[key] = `Sample ${key}`;
+          break;
+        case 'number':
+          result[key] = 123;
+          break;
+        case 'boolean':
+          result[key] = true;
+          break;
+        case 'array':
+          result[key] = [];
+          break;
+        case 'object':
+          result[key] = {};
+          break;
+        default:
+          result[key] = null;
+      }
+    }
+  }
+  
+  return result;
+}
 
 // Start server
 app.listen(PORT, async () => {

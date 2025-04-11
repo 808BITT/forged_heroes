@@ -146,9 +146,9 @@ export default function ToolList({ hideHeader = false }: ToolListProps) {
                             <p className="mt-2 text-sm text-muted-foreground">
                                 {searchTerm ? "Try a different search term." : "Get started by creating your first tool."}
                             </p>
-                            <Link to="/tools/new" className="mt-4">
+                            {/* <Link to="/tools/new" className="mt-4">
                                 <Button>Create Tool</Button>
-                            </Link>
+                            </Link> */}
                         </motion.div>
                     )}
                 </>

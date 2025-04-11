@@ -2,8 +2,8 @@ import { Tool } from '../store/toolStore';
 
 // Replace this with your actual API URL
 const API_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://api.yourapp.com'
-  : 'http://localhost:3001';
+  ? 'https://192.168.1.209:3001' // Update with the correct production IP
+  : 'http://192.168.1.209:3001';
 
 // Handle response errors
 const handleResponse = async (response: Response) => {

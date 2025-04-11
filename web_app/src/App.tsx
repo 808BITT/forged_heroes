@@ -29,7 +29,7 @@ function App() {
       <Router>
         <MainLayout>
           {error && (
-            <div className="bg-amber-500/10 border border-amber-500/50 text-amber-500 p-2 text-center text-sm">
+            <div className="bg-amber-500/10 border border-amber-500/50 text-amber-500 p-2 text-center text-sm mb-4 rounded-md">
               <strong>Error connecting to server:</strong> {error}
             </div>
           )}

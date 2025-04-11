@@ -51,10 +51,9 @@
 
 ### Tool Specification Enhancements
 
-- Implement a schema validation feature for tool specifications to ensure they adhere to a predefined structure
 - Add support for different parameter types (e.g., integer, boolean, array, object) with appropriate validation
-- Allow users to define dependencies between parameters (e.g., if parameter A is selected, parameter B becomes required)
-- Implement a "test tool" feature that allows users to test their tool specification with sample inputs and see the expected output
+
+
 
 ### Code Quality and Structure
 
