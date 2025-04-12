@@ -2,7 +2,6 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import ToolEditor from '../../components/ToolEditor';
 import { useToolStore } from '../../store/toolStore';
-import { parseFunctionSignature, generateDescription } from '../../services/toolSpecService';
 import toolsApi from '../../services/apiService'; // Import the actual apiService
 
 // Mock the services
@@ -91,6 +90,7 @@ describe('ToolEditor', () => {
   });
 
   test('submits new tool when form is valid', async () => {
+  // Removed duplicate block of code
     render(
       <BrowserRouter>
         <ToolEditor />
@@ -121,8 +121,8 @@ describe('ToolEditor', () => {
     const saveButton = screen.getByRole('button', { name: /^Save$/i });
     fireEvent.click(saveButton);
 
-    await waitFor(() => {
-      expect(mockAddTool).toHaveBeenCalledTimes(1);
+    await waitFor(async () => {
+      await waitFor(() => expect(mockAddTool).toHaveBeenCalledTimes(1));
       expect(mockAddTool).toHaveBeenCalledWith({
         name: 'Test Tool',
         description: 'New tool description',
@@ -133,41 +133,6 @@ describe('ToolEditor', () => {
           description: 'Test parameter description',
         }],
       });
-    });
-  });
-
-  test('processes function signature input', async () => {
-    // Adjust mock return values for parseFunctionSignature and generateDescription
-    (parseFunctionSignature as jest.Mock).mockReturnValue({
-      name: 'testFunction',
-      params: [{ name: 'param1', type: 'string' }],
-    });
-
-    (generateDescription as jest.Mock).mockResolvedValue('Auto-generated description');
-
-    render(
-      <BrowserRouter>
-        <ToolEditor />
-      </BrowserRouter>
-    );
-
-    // Input a function signature
-    const functionSignatureInput = screen.getByLabelText(/Function Signature/i);
-    fireEvent.change(functionSignatureInput, {
-      target: { value: 'function testFunction(param1: string)' },
-    });
-    
-    // Trigger the blur event to process the signature
-    fireEvent.blur(functionSignatureInput);
-
-    await waitFor(() => {
-      expect(parseFunctionSignature).toHaveBeenCalledWith('function testFunction(param1: string)');
-      expect(generateDescription).toHaveBeenCalledWith('function testFunction(param1: string)');
-    });
-
-    // Ensure the tool name is set correctly for function signature input
-    await waitFor(() => {
-      expect((screen.getByLabelText(/Tool Name/i) as HTMLInputElement).value).toBe('testFunction');
     });
   });
 

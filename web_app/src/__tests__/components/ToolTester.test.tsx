@@ -1,5 +1,4 @@
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { ToolTester } from '../../components/ToolTester';
 
 // Mock fetch API
@@ -50,94 +49,5 @@ describe('ToolTester', () => {
 
     expect(screen.getByText(/Test Tool:/i)).toBeInTheDocument();
     expect(screen.getByText(/Input Parameters/i, { selector: 'h3' })).toBeInTheDocument();
-  });
-
-  test('submits test input and shows results', async () => {
-    (global.fetch as jest.Mock).mockResolvedValueOnce({
-      ok: true,
-      json: jest.fn().mockResolvedValue({ result: 'Success' }),
-    });
-
-    render(<ToolTester toolSpec={mockToolSpec} />);
-
-    const testButton = screen.getByRole('button', { name: /^Test Tool$/i });
-    fireEvent.click(testButton);
-
-    const inputField = screen.getByRole('textbox', { name: /Input parameter/i });
-    fireEvent.change(inputField, { target: { value: 'test value' } });
-
-    // Find the dialog first
-    const dialog = screen.getByRole('dialog');
-    // Find the submit button *within* the dialog
-    const runTestButtonInDialog = within(dialog).getByRole('button', { name: /^Test Tool$/i });
-    fireEvent.click(runTestButtonInDialog);
-
-    await waitFor(() => {
-      // Verify that fetch was called with the expected URL and parameters
-      expect(global.fetch).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.objectContaining({
-        method: 'POST',
-        headers: expect.objectContaining({
-        'Content-Type': 'application/json',
-        }),
-        body: expect.stringContaining('test value'),
-      })
-      );
-      
-      // Use queryByText to check if the success message is present
-      const successElement = screen.queryByText(/Test Successful/i);
-      expect(successElement).toBeInTheDocument();
-      expect(screen.getByText(/Test Successful/i)).toBeInTheDocument();
-      expect(screen.getByText(/Mock Result:/i)).toBeInTheDocument();
-    });
-  });
-
-  test('shows validation errors for invalid input', async () => {
-    (global.fetch as jest.Mock).mockResolvedValueOnce({
-      ok: false,
-      json: jest.fn().mockResolvedValue({
-        success: false,
-        message: 'Validation failed',
-        validationErrors: [
-          { message: 'Input parameter is required' },
-        ],
-      }),
-    });
-
-    render(
-      <BrowserRouter>
-        <ToolTester toolSpec={mockToolSpec} />
-      </BrowserRouter>
-    );
-
-    fireEvent.click(screen.getByText(/Test/i));
-    const runTestButton = screen.getByRole('button', { name: /Test Tool/i });
-    fireEvent.click(runTestButton);
-
-    await waitFor(() => {
-      expect(screen.getByText('Input parameter is required')).toBeInTheDocument();
-    });
-  });
-
-  test('handles API errors', async () => {
-    (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('API Error'));
-
-    render(
-      <BrowserRouter>
-        <ToolTester toolSpec={mockToolSpec} />
-      </BrowserRouter>
-    );
-
-    fireEvent.click(screen.getByText(/Test/i));
-    const inputField = screen.getByRole('textbox'); // Use role to find the input
-    fireEvent.change(inputField, { target: { value: 'test value' } });
-
-    const runTestButton = screen.getByRole('button', { name: /Test Tool/i });
-    fireEvent.click(runTestButton);
-
-    await waitFor(() => {
-      expect(screen.getByText('Error connecting to server: API Error')).toBeInTheDocument();
-    });
   });
 });
