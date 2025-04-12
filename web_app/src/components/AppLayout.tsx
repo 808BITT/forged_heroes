@@ -49,8 +49,12 @@ export default function AppLayout() {
 
     const sidebarContent = (
         <div className="h-full flex flex-col bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <div className="p-6 border-b">
-                <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-500 bg-clip-text text-transparent">Forged Heroes</h2>
+            <div className="p-6 border-b flex items-center justify-center">
+                <img 
+                    src="/static/logo.png" 
+                    alt="Forged Heroes Logo" 
+                    className="logo h-10" 
+                />
             </div>
 
             <nav className="flex-1">
@@ -130,7 +134,6 @@ export default function AppLayout() {
                             </Button>
                         </SheetTrigger>
                     )}
-                    <h1 className="text-lg font-semibold">Forged Heroes</h1>
                     <div className="ml-auto">
                         <Button
                             variant="ghost"

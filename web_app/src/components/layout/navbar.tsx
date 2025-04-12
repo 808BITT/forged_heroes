@@ -22,11 +22,16 @@ export default function Navbar(): JSX.Element {
 
   return (
     <nav className="bg-background border-b sticky top-0 z-50">
-      <div className="container mx-auto px-4 py-4">
+      <div className="container mx-auto px-4 py-2">
         <div className="flex justify-between items-center">
-          <div className="flex items-center">
-            <Link to="/" className="font-bold text-xl bg-gradient-to-r from-purple-600 to-blue-500 bg-clip-text text-transparent">
-              Hero Forge
+          <div className="flex items-center py-2">
+            <Link to="/" className="flex items-center">
+              <img 
+                src="/static/logo.png" 
+                alt="Forged Heroes Logo" 
+                className="logo h-16 w-auto mr-4" 
+              />
+              {/* <span className="font-bold text-xl">Forged Heroes</span> */}
             </Link>
           </div>
           
@@ -37,7 +42,7 @@ export default function Navbar(): JSX.Element {
                 key={item.path}
                 to={item.path} 
                 className={cn(
-                  "text-foreground hover:text-primary transition-colors mr-4 hover:bg-gradient-to-r from-purple-600 to-blue-500 bg-clip-text",
+                  "text-foreground hover:text-primary transition-colors mr-4",
                   isActive(item.path) && "text-primary font-medium underline"
                 )}
               >

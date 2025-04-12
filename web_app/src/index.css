@@ -10,7 +10,7 @@
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 262.1 83.3% 57.8%;
+    --primary: 179 96% 25%;
     --primary-foreground: 210 40% 98%;
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
@@ -22,7 +22,7 @@
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 262.1 83.3% 57.8%;
+    --ring: 179 96% 25%;
     --radius: 0.75rem;
   }
  
@@ -33,7 +33,7 @@
     --card-foreground: 210 40% 98%;
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-    --primary: 263.4 70% 50.4%;
+    --primary: 179 96% 25%;
     --primary-foreground: 210 40% 98%;
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
@@ -45,7 +45,7 @@
     --destructive-foreground: 210 40% 98%;
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 263.4 70% 50.4%;
+    --ring: 179 96% 25%;
   }
 }
  
@@ -71,8 +71,55 @@
   }
 }
 
+/* New gradient animation for our glow effects */
+@keyframes gradientMove {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Pulse animation for outlines */
+@keyframes pulseOutline {
+  0% {
+    box-shadow: 0 0 0 0 hsla(var(--primary), 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 4px hsla(var(--primary), 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 hsla(var(--primary), 0);
+  }
+}
+
+/* Border flow animation */
+@keyframes borderFlow {
+  0% {
+    border-color: hsla(var(--primary), 0.2);
+  }
+  50% {
+    border-color: hsla(var(--primary), 0.8);
+  }
+  100% {
+    border-color: hsla(var(--primary), 0.2);
+  }
+}
+
 .animate-float {
   animation: float 6s ease-in-out infinite;
+}
+
+.animate-pulse-outline {
+  animation: pulseOutline 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-border-flow {
+  animation: borderFlow 2s ease-in-out infinite;
 }
 
 /* Smooth Scrolling */
@@ -100,6 +147,7 @@ html {
   mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
+  pointer-events: none;
   opacity: 0;
   transition: opacity 0.3s ease;
 }
