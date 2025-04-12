@@ -19,3 +19,9 @@
 .read-the-docs {
   color: #888;
 }
+
+/* Optimized CSS transitions and animations */
+.element-to-animate {
+  will-change: transform, opacity;
+  transition: transform 300ms ease, opacity 300ms ease;
+}

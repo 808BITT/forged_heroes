@@ -145,28 +145,34 @@ export default function ToolList({ hideHeader = false, searchTerm: externalSearc
             }
             width="max-w-md"
         >
-            <GlowCard
-                className="p-4 cursor-pointer relative overflow-hidden group rounded-lg border bg-card text-card-foreground shadow-sm"
-                glowColor={color}
-                glowSize={200}
-                glowIntensity={0.6}
-                hoverScale={1.03}
-                onClick={() => handleToolClick(tool.id)}
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
             >
-                <div className="flex justify-between">
-                    <div>
-                        <h3 className="font-semibold">{tool.name}</h3>
-                        <p className="text-sm text-muted-foreground line-clamp-1">
-                            {tool.description}
-                        </p>
-                    </div>
-                    {parameters.length > 0 && (
-                        <div className="bg-primary/10 text-primary rounded-full w-6 h-6 flex items-center justify-center text-xs font-medium">
-                            {parameters.length}
+                <GlowCard
+                    className="p-4 cursor-pointer relative overflow-hidden group rounded-lg border bg-card text-card-foreground shadow-sm"
+                    glowColor={color}
+                    glowSize={200}
+                    glowIntensity={0.6}
+                    hoverScale={1.03}
+                    onClick={() => handleToolClick(tool.id)}
+                >
+                    <div className="flex justify-between">
+                        <div>
+                            <h3 className="font-semibold">{tool.name}</h3>
+                            <p className="text-sm text-muted-foreground line-clamp-1">
+                                {tool.description}
+                            </p>
                         </div>
-                    )}
-                </div>
-            </GlowCard>
+                        {parameters.length > 0 && (
+                            <div className="bg-primary/10 text-primary rounded-full w-6 h-6 flex items-center justify-center text-xs font-medium">
+                                {parameters.length}
+                            </div>
+                        )}
+                    </div>
+                </GlowCard>
+            </motion.div>
         </Tooltip>
     );
 

@@ -155,3 +155,9 @@ html {
 .hover-card-gradient:hover::before {
   opacity: 1;
 }
+
+/* Mobile Scrolling Optimization */
+.tool-list {
+  -webkit-overflow-scrolling: touch;
+  touch-action: manipulation;
+}
