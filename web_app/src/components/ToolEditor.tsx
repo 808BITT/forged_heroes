@@ -370,17 +370,53 @@ export default function ToolEditor() {
             name,
             description,
             category,
-            parameters,
-            status: "active" as "active" | "inactive" | "draft",
+            inputSchema: {
+                type: "object",
+                properties: parameters.reduce((acc: Record<string, any>, param) => {
+                    if (param.name) {
+                        const paramSpec: any = {
+                            type: param.type,
+                            description: param.description,
+                        };
+
+                        if (param.default !== undefined) {
+                            paramSpec.default = param.default;
+                        }
+
+                        if (param.type === "array" && param.arrayItemType) {
+                            paramSpec.items = { type: param.arrayItemType };
+                        }
+
+                        acc[param.name] = paramSpec;
+                    }
+                    return acc;
+                }, {}),
+                required: parameters.filter((param) => param.required).map((param) => param.name),
+            },
+            parameters: parameters.map((param) => ({
+                id: param.id,
+                name: param.name,
+                type: param.type,
+                description: param.description,
+                required: param.required,
+                default: param.default,
+                enumValues: param.enumValues,
+                minimum: param.minimum,
+                maximum: param.maximum,
+                arrayItemType: param.arrayItemType,
+                arrayItemDescription: param.arrayItemDescription,
+                objectProperties: param.objectProperties,
+                dependencies: param.dependencies,
+            })),
+            status: "active" as "active", // Explicitly cast to match the expected type
             lastModified: new Date().toISOString(),
-            categories: [category],
         };
 
         try {
             if (id) {
-                updateTool(id, toolData);
+                await updateTool(id, toolData);
             } else {
-                const newId = await addTool(toolData); // Await the promise
+                const newId = await addTool(toolData);
                 if (newId) {
                     navigate(`/tools/${newId}`);
                 } else {
@@ -485,15 +521,8 @@ export default function ToolEditor() {
                         itemType={param.arrayItemType || 'string'}
                         itemDescription={param.arrayItemDescription || ''}
                         itemProperties={param.objectProperties}
-                        onUpdate={(config) => {
-                            handleUpdateArrayConfig(param.id, {
-                                itemType: config.itemType,
-                                itemDescription: config.itemDescription,
-                                itemProperties: config.itemProperties,
-                                onUpdate: function (config: { itemType: string; itemDescription: string; itemProperties?: Record<string, any>; }): void {
-                                    throw new Error("Function not implemented.");
-                                }
-                            }, parameters, setParameters);
+                        onUpdate={function (): void {
+                            throw new Error("Function not implemented.");
                         }}
                     />
                 );
@@ -528,33 +557,38 @@ export default function ToolEditor() {
                 animate={{ opacity: 1, y: 0 }}
                 className="space-y-8"
             >
-                <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                            <Link to="/tools">
-                                <Button variant="ghost" size="icon">
-                                    <ArrowLeft className="h-4 w-4" />
-                                </Button>
-                            </Link>
-                            <h1 className="text-xl sm:text-3xl font-bold tracking-tight">
-                                {id ? "Edit Tool" : "Create Tool"}
-                            </h1>
-                        </div>
-                        <p className="text-muted-foreground">
+                <div className="relative w-full flex flex-col items-center text-center mb-8">
+                    <div className="absolute left-2 top-0 z-10">
+                        <Link to="/tools">
+                            <Button variant="secondary" className="shadow-md text-lg px-5 py-2 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm hover:bg-white dark:hover:bg-slate-800">
+                                <ArrowLeft className="h-5 w-5 mr-2" />
+                                Back
+                            </Button>
+                        </Link>
+                    </div>
+
+                    <div className="space-y-2 pt-2 max-w-2xl mx-auto">
+                        <h1 className="text-2xl sm:text-4xl font-bold tracking-tight py-2 px-6">
+                            {id ? "Edit Tool" : "Create Tool"}
+                        </h1>
+                        <p className="text-muted-foreground py-2 px-4">
                             Configure your tool settings and parameters
                         </p>
                     </div>
-                    <div className="flex gap-2">
-                        {id && (
-                            <Button variant="destructive" onClick={handleDelete}>
-                                <Trash className="h-4 w-4 mr-2" />
-                                Delete
+
+                    <div className="absolute right-2 top-0 z-10">
+                        <div className="flex gap-2">
+                            {id && (
+                                <Button variant="destructive" onClick={handleDelete} className="shadow-md">
+                                    <Trash className="h-4 w-4 mr-2" />
+                                    Delete
+                                </Button>
+                            )}
+                            <Button onClick={handleSave} className="gap-2 shadow-md" data-testid="save-tool-button">
+                                <Save className="h-4 w-4" />
+                                Save
                             </Button>
-                        )}
-                        <Button onClick={handleSave} className="gap-2" data-testid="save-tool-button">
-                            <Save className="h-4 w-4" />
-                            Save
-                        </Button>
+                        </div>
                     </div>
                 </div>
 
@@ -574,7 +608,7 @@ export default function ToolEditor() {
                     <motion.div
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
-                        className="space-y-6"
+                        className="space-y-6 bg-white/80 dark:bg-slate-900/80 p-6 rounded-lg shadow-md backdrop-blur-sm"
                     >
                         <div className="space-y-2">
                             <Label htmlFor="tool-name">Tool Name</Label>
@@ -644,7 +678,7 @@ export default function ToolEditor() {
                                 <Label>Parameters</Label>
                                 <Button 
                                     type="button" 
-                                    variant="outline" 
+                                    variant="default" 
                                     size="sm" 
                                     onClick={() => handleAddParameter(parameters, setParameters)}
                                 >

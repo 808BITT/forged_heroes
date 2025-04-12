@@ -2,7 +2,7 @@
   "name": "Remote Execution",
   "description": "Execute a command on a remote system via SSH",
   "version": "1.0.0",
-  "parameters": {
+  "inputSchema": {
     "type": "object",
     "properties": {
       "host": {

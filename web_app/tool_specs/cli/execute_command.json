@@ -2,7 +2,7 @@
   "name": "Execute Command",
   "description": "Execute a command on the local system",
   "version": "1.0.0",
-  "parameters": {
+  "inputSchema": {
     "type": "object",
     "properties": {
       "command": {

@@ -4,43 +4,36 @@
     "name": "remote_execution",
     "description": "Execute a command via SSH",
     "category": "CLI",
-    "parameters": [
-      {
-        "id": "p1",
-        "name": "user",
-        "type": "string",
-        "description": "The PAM user",
-        "required": true
-      },
-      {
-        "id": "p2",
-        "name": "host",
-        "type": "string",
-        "description": "The hostname/IP to connect to",
-        "required": true
-      },
-      {
-        "id": "p3",
-        "name": "password",
-        "type": "string",
-        "description": "Password to login with",
-        "required": true
-      },
-      {
-        "id": "p4",
-        "name": "command",
-        "type": "string",
-        "description": "The command to execute",
-        "required": true
-      },
-      {
-        "id": "p5",
-        "name": "args",
-        "type": "array",
-        "description": "Array of args to pass to the command",
-        "required": false
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "user": {
+          "type": "string",
+          "description": "The PAM user",
+          "required": true
+        },
+        "host": {
+          "type": "string",
+          "description": "The hostname/IP to connect to",
+          "required": true
+        },
+        "password": {
+          "type": "string",
+          "description": "Password to login with",
+          "required": true
+        },
+        "command": {
+          "type": "string",
+          "description": "The command to execute",
+          "required": true
+        },
+        "args": {
+          "type": "array",
+          "description": "Array of args to pass to the command",
+          "required": false
+        }
       }
-    ],
+    },
     "status": "active",
     "lastModified": "2025-04-10T16:45:04.6936301-04:00"
   },
@@ -49,29 +42,26 @@
     "name": "execute_command",
     "description": "CLI execution",
     "category": "CLI",
-    "parameters": [
-      {
-        "id": "p1",
-        "name": "cmd",
-        "type": "string",
-        "description": "The CLI command to execute",
-        "required": true
-      },
-      {
-        "id": "p2",
-        "name": "args",
-        "type": "array",
-        "description": "Arguments for the CLI command",
-        "required": false
-      },
-      {
-        "id": "p3",
-        "name": "timeout",
-        "type": "integer",
-        "description": "Timeout for the command in seconds",
-        "required": false
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "cmd": {
+          "type": "string",
+          "description": "The CLI command to execute",
+          "required": true
+        },
+        "args": {
+          "type": "array",
+          "description": "Arguments for the CLI command",
+          "required": false
+        },
+        "timeout": {
+          "type": "integer",
+          "description": "Timeout for the command in seconds",
+          "required": false
+        }
       }
-    ],
+    },
     "status": "active",
     "lastModified": "2025-04-10T16:59:45.89561-04:00"
   },
@@ -80,22 +70,21 @@
     "name": "get_current_weather",
     "description": "Get the current weather for a location",
     "category": "General",
-    "parameters": [
-      {
-        "id": "p1",
-        "name": "location",
-        "type": "string",
-        "description": "The location to get the weather for, e.g. San Francisco, CA",
-        "required": true
-      },
-      {
-        "id": "p2",
-        "name": "format",
-        "type": "string",
-        "description": "The format to return the weather in, e.g. 'celsius' or 'fahrenheit'",
-        "required": true
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "location": {
+          "type": "string",
+          "description": "The location to get the weather for, e.g. San Francisco, CA",
+          "required": true
+        },
+        "format": {
+          "type": "string",
+          "description": "The format to return the weather in, e.g. 'celsius' or 'fahrenheit'",
+          "required": true
+        }
       }
-    ],
+    },
     "status": "active",
     "lastModified": "2025-04-10T12:03:59.75Z"
   },
@@ -104,15 +93,16 @@
     "name": "client_info",
     "description": "Returns information and status for the client.",
     "category": "Minecraft",
-    "parameters": [
-      {
-        "id": "p1744307951170",
-        "name": "need_none",
-        "type": "string",
-        "description": "Forced to have a param...",
-        "required": false
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "need_none": {
+          "type": "string",
+          "description": "Forced to have a param...",
+          "required": false
+        }
       }
-    ],
+    },
     "status": "active",
     "lastModified": "2025-04-10T16:57:00.860549-04:00"
   }
