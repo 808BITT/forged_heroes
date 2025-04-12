@@ -9,12 +9,9 @@ import { Label } from "./ui/label.tsx";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Switch } from "./ui/switch";
 import { Textarea } from "./ui/textarea.tsx";
-import { ToolTester } from './ToolTester';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible.tsx";
 import ParameterDependency from "./ParameterDependency";
 import ArrayItemConfig from "./ArrayItemConfig";
-// New imports for LLM and API services
-import { parseFunctionSignature, generateDescription } from "../services/toolSpecService";
 import toolsApi, { Category } from "../services/apiService";
 // Modal components for the category dialog
 import {
@@ -41,7 +38,6 @@ const PARAMETER_TYPES = [
 export default function ToolEditor() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const getToolById = useToolStore((state) => state.getToolById);
     const addTool = useToolStore((state) => state.addTool);
     const updateTool = useToolStore((state) => state.updateTool);
     const deleteTool = useToolStore((state) => state.deleteTool);
@@ -54,7 +50,6 @@ export default function ToolEditor() {
     const [parameters, setParameters] = useState<Parameter[]>([]);
     const [jsonPreview, setJsonPreview] = useState("");
     const [copied, setCopied] = useState(false);
-    const [functionSignature, setFunctionSignature] = useState("");
     const [highlightedFields, setHighlightedFields] = useState<string[]>([]);
     const [errors, setErrors] = useState<string[]>([]);
     
@@ -529,51 +524,6 @@ export default function ToolEditor() {
         }
     };
 
-    const handleFunctionSignatureChange = async (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        const signature = e.target.value;
-        setFunctionSignature(signature);
-
-        if (signature.trim()) {
-            const result = parseFunctionSignature(signature);
-            if (result) {
-                const { name, params } = result;
-                setName(name);
-                setParameters(params.map(param => ({
-                    id: `p${Date.now()}`,
-                    name: param.name,
-                    type: param.type,
-                    description: "",
-                    required: true,
-                    // New fields for enhanced type support
-                    format: "",
-                    enumValues: [],
-                    minimum: "",
-                    maximum: "",
-                    default: "",
-                    arrayItemType: "string",
-                    arrayItemDescription: "",
-                    objectProperties: {},
-                    dependencies: null
-                })));
-            }
-            setName(name);
-            setParameters(parameters);
-
-            const descriptionStart = await generateDescription(signature);
-            setDescription(descriptionStart);
-
-            const fieldsToHighlight = [];
-            if (!name) fieldsToHighlight.push("name");
-            if (!descriptionStart) fieldsToHighlight.push("description");
-            parameters.forEach((param: Parameter) => {
-                if (!param.name) fieldsToHighlight.push(`param-name-${param.id}`);
-                if (!param.type) fieldsToHighlight.push(`param-type-${param.id}`);
-                if (!param.description) fieldsToHighlight.push(`param-desc-${param.id}`);
-            });
-            setHighlightedFields(fieldsToHighlight);
-        }
-    };
-
     // Render type-specific configuration fields
     const renderTypeSpecificFields = (param: Parameter) => {
         switch (param.type) {
@@ -707,11 +657,10 @@ export default function ToolEditor() {
                                 Delete
                             </Button>
                         )}
-                        <Button onClick={handleSave} className="gap-2">
+                        <Button onClick={handleSave} className="gap-2" data-testid="save-tool-button">
                             <Save className="h-4 w-4" />
                             Save
                         </Button>
-                        {jsonPreview && <ToolTester toolSpec={jsonPreview} className="mr-2" />}
                     </div>
                 </div>
 
@@ -733,17 +682,6 @@ export default function ToolEditor() {
                         animate={{ opacity: 1, x: 0 }}
                         className="space-y-6"
                     >
-                        <div className="space-y-2">
-                            <Label htmlFor="function-signature">Function Signature</Label>
-                            <Textarea
-                                id="function-signature"
-                                placeholder="Paste function signature here..."
-                                rows={4}
-                                value={functionSignature}
-                                onChange={handleFunctionSignatureChange}
-                            />
-                        </div>
-
                         <div className="space-y-2">
                             <Label htmlFor="tool-name">Tool Name</Label>
                             <Input

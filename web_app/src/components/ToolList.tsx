@@ -1,12 +1,11 @@
-import { motion } from "framer-motion";
-import { ArrowRight, Plus, Search, Wrench } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useToolStore } from "../store/toolStore";
-import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { LoadingSpinner } from "./ui/loading-spinner";
+import { Tooltip } from "./ui/tooltip.tsx";
 
 interface ToolListProps {
     hideHeader?: boolean;
@@ -18,6 +17,8 @@ export default function ToolList({ hideHeader = false }: ToolListProps) {
     const isLoaded = useToolStore((state) => state.isLoaded);
     const isLoading = useToolStore((state) => state.isLoading);
     const [searchTerm, setSearchTerm] = useState("");
+    const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+    const navigate = useNavigate();
 
     useEffect(() => {
         if (!isLoaded) {
@@ -25,30 +26,55 @@ export default function ToolList({ hideHeader = false }: ToolListProps) {
         }
     }, [isLoaded, loadToolSpecifications]);
 
-    const filteredTools = tools.filter(tool => 
-        tool.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        tool.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        tool.category.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredTools = tools.filter((tool) => {
+        const matchesSearch = tool.name.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesCategory = selectedCategory ? tool.category === selectedCategory : true;
+        return matchesSearch && matchesCategory;
+    });
 
-    const container = {
-        hidden: { opacity: 0 },
-        show: {
-            opacity: 1,
-            transition: {
-                staggerChildren: 0.1
+    const toolsByCategory = tools.reduce((acc, tool) => {
+        const category = tool.category || "Uncategorized";
+        if (!acc[category]) {
+            acc[category] = [];
+        }
+        acc[category].push(tool);
+        return acc;
+    }, {} as Record<string, typeof tools>);
+
+    const categories = Object.keys(toolsByCategory);
+
+    // Helper function to parse parameters if they're stored as a string
+    interface ToolParameter {
+        id?: string;
+        name: string;
+        type: string;
+        description: string;
+        required: boolean;
+    }
+
+    const getParameters = (tool: { parameters?: string | ToolParameter[] }): ToolParameter[] => {
+        if (!tool.parameters) return [];
+        
+        // If parameters is a string, parse it
+        if (typeof tool.parameters === 'string') {
+            try {
+                return JSON.parse(tool.parameters) as ToolParameter[];
+            } catch (err) {
+                console.error('Failed to parse parameters:', err);
+                return [];
             }
         }
-    };
-
-    const item = {
-        hidden: { y: 20, opacity: 0 },
-        show: { y: 0, opacity: 1 }
+        
+        // If it's already an array, return it
+        if (Array.isArray(tool.parameters)) {
+            return tool.parameters;
+        }
+        
+        return [];
     };
 
     return (
         <div className="space-y-8">
-            {/* Only show header when not hidden */}
             {!hideHeader && (
                 <div className="flex flex-col gap-4">
                     <div className="flex items-center justify-between">
@@ -60,99 +86,95 @@ export default function ToolList({ hideHeader = false }: ToolListProps) {
                             </Button>
                         </Link>
                     </div>
-                    <p className="text-muted-foreground">
-                        Equip your LLM Heroes with powerful tools
-                    </p>
+                    <p className="text-muted-foreground">Equip your LLM Heroes with powerful tools</p>
                 </div>
             )}
 
-            <div className="flex flex-wrap items-center gap-4">
-                <div className="relative flex-1 min-w-[200px]">
-                    <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                        placeholder="Search tools..."
-                        className="pl-10"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </div>
+            <div className="flex items-center gap-4">
+                <Input
+                    type="text"
+                    placeholder="Search tools..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="flex-1"
+                />
             </div>
 
-            {isLoading ? (
-                <div className="flex flex-col items-center justify-center py-12">
-                    <LoadingSpinner size="lg" />
-                    <p className="mt-4 text-muted-foreground">Loading your tools...</p>
-                </div>
-            ) : (
-                <>
-                    <motion.div
-                        variants={container}
-                        initial="hidden"
-                        animate="show"
-                        className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
-                    >
-                        {filteredTools.map((tool) => (
-                            <motion.div
-                                key={tool.id}
-                                variants={item}
-                                className="group relative overflow-hidden rounded-lg border bg-card p-6 hover:border-foreground/50 transition-all duration-200"
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <div className="lg:col-span-3 space-y-4">
+                    <h2 className="text-2xl font-semibold mb-4">Categories</h2>
+                    <div className="space-y-2">
+                        {categories.map((category) => (
+                            <div
+                                key={category}
+                                className={`p-4 rounded-lg cursor-pointer transition-all ${selectedCategory === category
+                                    ? "bg-primary text-primary-foreground shadow-md"
+                                    : "bg-card hover:bg-secondary/50"}`}
+                                onClick={() => setSelectedCategory(category === selectedCategory ? null : category)}
                             >
-                                <div className="flex flex-col gap-4">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center space-x-4">
-                                            <div className="rounded-full p-2 bg-purple-100 dark:bg-purple-900">
-                                                <Wrench className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                                            </div>
-                                            <h3 className="font-semibold tracking-tight">{tool.name}</h3>
-                                        </div>
-                                    </div>
-                                    <div className="flex">
-                                        <Badge variant="secondary">{tool.category}</Badge>
-                                    </div>
-                                    <p className="text-sm text-muted-foreground line-clamp-2">
-                                        {tool.description}
-                                    </p>
-                                    <div className="flex items-center justify-between mt-auto">
-                                        <div className="text-xs text-muted-foreground">
-                                            {new Date(tool.lastModified).toLocaleDateString()}
-                                        </div>
-                                        <Link to={`/tools/${tool.id}`}>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="gap-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                                            >
-                                                Configure
-                                                <ArrowRight className="h-4 w-4" />
-                                            </Button>
-                                        </Link>
-                                    </div>
-                                </div>
-                                <div className="absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r from-transparent via-foreground/10 to-transparent" />
-                            </motion.div>
-                        ))}
-                    </motion.div>
-
-                    {filteredTools.length === 0 && (
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="flex flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center"
-                        >
-                            <div className="rounded-full bg-secondary p-3">
-                                <Wrench className="h-6 w-6 text-muted-foreground" />
+                                <span className="font-medium">{category}</span>
                             </div>
-                            <h3 className="mt-4 text-lg font-semibold">No tools found</h3>
-                            <p className="mt-2 text-sm text-muted-foreground">
-                                {searchTerm ? "Try a different search term." : "Get started by creating your first tool."}
-                            </p>
-                            {/* <Link to="/tools/new" className="mt-4">
-                                <Button>Create Tool</Button>
-                            </Link> */}
-                        </motion.div>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="lg:col-span-9 space-y-4">
+                    <h2 className="text-2xl font-semibold mb-4">
+                        {selectedCategory ? `${selectedCategory} Tools` : "All Tools"}
+                    </h2>
+
+                    {isLoading ? (
+                        <LoadingSpinner />
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {filteredTools.map((tool) => {
+                                const parameters = getParameters(tool);
+                                return (
+                                <Tooltip
+                                    key={tool.id}
+                                    content={
+                                        <div>
+                                            <h3 className="text-sm font-semibold mb-2">Parameters:</h3>
+                                            {parameters && parameters.length > 0 ? (
+                                                <ul className="space-y-1">
+                                                    {parameters.map(param => (
+                                                        <li key={param.id || `param-${param.name}`} className="flex items-start">
+                                                            <div className={`w-2 h-2 mt-1 rounded-full mr-2 ${param.required ? "bg-green-500" : "bg-gray-400"}`}></div>
+                                                            <div>
+                                                                <span className="font-medium">{param.name}</span>
+                                                                <span className="text-xs ml-2 text-muted-foreground">({param.type})</span>
+                                                                <p className="text-xs text-muted-foreground">{param.description}</p>
+                                                            </div>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            ) : (
+                                                <p className="text-sm text-muted-foreground">No parameters defined</p>
+                                            )}
+                                        </div>
+                                    }
+                                >
+                                    <div
+                                        className="p-4 border rounded-lg cursor-pointer hover:shadow-md transition-all"
+                                        onClick={() => navigate(`/tools/${tool.id}`)}
+                                    >
+                                        <h3 className="font-semibold">{tool.name}</h3>
+                                        <p className="text-sm text-muted-foreground line-clamp-1">
+                                            {tool.description}
+                                        </p>
+                                    </div>
+                                </Tooltip>
+                            )})}
+
+                            {filteredTools.length === 0 && (
+                                <div className="text-center py-12 text-muted-foreground">
+                                    No tools found
+                                </div>
+                            )}
+                        </div>
                     )}
-                </>
-            )}
+                </div>
+            </div>
         </div>
     );
 }

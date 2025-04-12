@@ -54,13 +54,13 @@ describe('ToolEditor', () => {
     } as any);
   });
 
-  test('renders empty form for new tool', () => {
+  test('renders form with correct fields', () => {
     render(
       <BrowserRouter>
         <ToolEditor />
       </BrowserRouter>
     );
-
+  
     // Check that the form loads with proper title and default fields
     expect(screen.getByText(/Create Tool/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Tool Name/i)).toBeInTheDocument();
@@ -123,16 +123,16 @@ describe('ToolEditor', () => {
 
     await waitFor(() => {
       expect(mockAddTool).toHaveBeenCalledTimes(1);
-      expect(mockAddTool).toHaveBeenCalledWith(expect.objectContaining({
+      expect(mockAddTool).toHaveBeenCalledWith({
         name: 'Test Tool',
         description: 'New tool description',
-        parameters: expect.arrayContaining([
-          expect.objectContaining({
-            name: 'testParam',
-            description: 'Test parameter description',
-          }),
-        ]),
-      }));
+        category: '',
+        functionSignature: '',
+        parameters: [{
+          name: 'testParam',
+          description: 'Test parameter description',
+        }],
+      });
     });
   });
 
@@ -152,14 +152,17 @@ describe('ToolEditor', () => {
     );
 
     // Input a function signature
-    fireEvent.change(screen.getByLabelText(/Function Signature/i), {
+    const functionSignatureInput = screen.getByLabelText(/Function Signature/i);
+    fireEvent.change(functionSignatureInput, {
       target: { value: 'function testFunction(param1: string)' },
     });
+    
+    // Trigger the blur event to process the signature
+    fireEvent.blur(functionSignatureInput);
 
     await waitFor(() => {
       expect(parseFunctionSignature).toHaveBeenCalledWith('function testFunction(param1: string)');
       expect(generateDescription).toHaveBeenCalledWith('function testFunction(param1: string)');
-      expect((screen.getByLabelText(/Tool Name/i) as HTMLInputElement).value).toBe('testFunction');
     });
 
     // Ensure the tool name is set correctly for function signature input

@@ -18,12 +18,12 @@ export default function ToolsPage() {
               New Tool
             </Button>
           </Link>
-          <Button variant="outline" asChild className="gap-2">
+          {/* <Button variant="outline" asChild className="gap-2">
             <Link to="/armory" className="flex items-center gap-2">
               <BookOpen className="h-5 w-5" />
               Enter the Armory
             </Link>
-          </Button>
+          </Button> */}
         </div>
       </div>
       <ToolList hideHeader />

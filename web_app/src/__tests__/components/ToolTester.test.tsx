@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { ToolTester } from '../../components/ToolTester';
 
@@ -66,10 +66,28 @@ describe('ToolTester', () => {
     const inputField = screen.getByRole('textbox', { name: /Input parameter/i });
     fireEvent.change(inputField, { target: { value: 'test value' } });
 
-    const runTestButton = screen.getByRole('button', { name: /^Test Tool$/i });
-    fireEvent.click(runTestButton);
+    // Find the dialog first
+    const dialog = screen.getByRole('dialog');
+    // Find the submit button *within* the dialog
+    const runTestButtonInDialog = within(dialog).getByRole('button', { name: /^Test Tool$/i });
+    fireEvent.click(runTestButtonInDialog);
 
     await waitFor(() => {
+      // Verify that fetch was called with the expected URL and parameters
+      expect(global.fetch).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({
+        'Content-Type': 'application/json',
+        }),
+        body: expect.stringContaining('test value'),
+      })
+      );
+      
+      // Use queryByText to check if the success message is present
+      const successElement = screen.queryByText(/Test Successful/i);
+      expect(successElement).toBeInTheDocument();
       expect(screen.getByText(/Test Successful/i)).toBeInTheDocument();
       expect(screen.getByText(/Mock Result:/i)).toBeInTheDocument();
     });

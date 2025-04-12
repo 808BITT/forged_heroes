@@ -12,7 +12,7 @@ export default function Navbar(): JSX.Element {
     // { name: 'Home', path: '/' },
     { name: 'Dashboard', path: '/dashboard' },
     { name: 'Tools', path: '/tools' },
-    { name: 'Armory', path: '/armory' },
+    // { name: 'Armory', path: '/armory' },
   ];
 
   const isActive = (path: string) => {
