@@ -1,18 +1,18 @@
 import { motion } from "framer-motion";
-import { ArrowLeft, Copy, Plus, Save, Trash, ChevronDown, ChevronUp, PlusCircle } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronUp, Copy, Plus, PlusCircle, Save, Trash } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import toolsApi, { Category } from "../services/apiService";
 import { Parameter, useToolStore } from "../store/toolStore";
+import ArrayItemConfig from "./ArrayItemConfig";
+import ParameterDependency from "./ParameterDependency";
 import { Button } from "./ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible.tsx";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label.tsx";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Switch } from "./ui/switch";
 import { Textarea } from "./ui/textarea.tsx";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible.tsx";
-import ParameterDependency from "./ParameterDependency";
-import ArrayItemConfig from "./ArrayItemConfig";
-import toolsApi, { Category } from "../services/apiService";
 // Modal components for the category dialog
 import {
     Dialog,
@@ -22,7 +22,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "./ui/dialog";
-import { useToast, ToastContainer } from "./ui/use-toast";
+import { ToastContainer, useToast } from "./ui/use-toast";
 
 // Updated parameter types
 const PARAMETER_TYPES = [
@@ -151,28 +151,11 @@ export default function ToolEditor() {
                     console.error('Error fetching tool:', error);
                 }
             } else {
-                // Default empty parameter for new tools
-                setParameters([
-                    {
-                        id: `p${Date.now()}`,
-                        name: "",
-                        type: "string",
-                        description: "",
-                        required: true,
-                        // New fields for enhanced type support
-                        format: "",
-                        enumValues: [],
-                        minimum: "",
-                        maximum: "",
-                        default: "",
-                        arrayItemType: "string",
-                        arrayItemDescription: "",
-                        objectProperties: {},
-                        dependencies: null
-                    }
-                ]);
+                // No default parameters for new tools
+                setParameters([]);
             }
         }
+
         fetchTool();
     }, [id]);
 
@@ -772,15 +755,29 @@ export default function ToolEditor() {
                                                 <h3 className="text-sm font-medium">
                                                     Parameter {index + 1}: {param.name || "Unnamed Parameter"}
                                                 </h3>
-                                                <CollapsibleTrigger asChild>
-                                                    <Button variant="ghost" size="sm">
-                                                        {openPanels[param.id] ? (
-                                                            <ChevronUp className="h-4 w-4" />
-                                                        ) : (
-                                                            <ChevronDown className="h-4 w-4" />
-                                                        )}
+                                                <div className="flex items-center gap-2">
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleRemoveParameter(param.id);
+                                                        }}
+                                                        className="h-8 w-8 p-0"
+                                                    >
+                                                        <Trash className="h-4 w-4 text-red-500 hover:text-red-700" />
                                                     </Button>
-                                                </CollapsibleTrigger>
+                                                    <CollapsibleTrigger asChild>
+                                                        <Button variant="ghost" size="sm">
+                                                            {openPanels[param.id] ? (
+                                                                <ChevronUp className="h-4 w-4" />
+                                                            ) : (
+                                                                <ChevronDown className="h-4 w-4" />
+                                                            )}
+                                                        </Button>
+                                                    </CollapsibleTrigger>
+                                                </div>
                                             </div>
                                             <div className="grid grid-cols-2 gap-4 mt-2">
                                                 <div className="space-y-2">

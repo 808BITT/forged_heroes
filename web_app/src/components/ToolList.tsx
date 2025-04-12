@@ -1,14 +1,13 @@
+import { motion } from "framer-motion";
 import { ArrowRight, Filter, Plus, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useToolStore } from "../store/toolStore";
 import { Button } from "./ui/button";
+import { GlowCard, GlowEffect } from "./ui/glow-effect";
 import { Input } from "./ui/input";
 import { LoadingSpinner } from "./ui/loading-spinner";
 import { Tooltip } from "./ui/tooltip.tsx";
-import { GlowEffect } from "./ui/glow-effect";
-import { GlowCard } from "./ui/glow-effect";
-import { motion } from "framer-motion";
 
 interface ToolListProps {
     hideHeader?: boolean;
@@ -93,7 +92,6 @@ export default function ToolList({ hideHeader = false, searchTerm: externalSearc
     const getCategoryColor = (category: string) => {
         const colors = [
             "rgba(26, 188, 156, 0.6)", // Emerald
-            "rgba(46, 204, 113, 0.6)", // Green
             "rgba(52, 152, 219, 0.6)", // Blue
             "rgba(155, 89, 182, 0.6)", // Purple
             "rgba(52, 73, 94, 0.6)",   // Dark
