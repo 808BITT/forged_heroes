@@ -1,110 +1,55 @@
+import React from "react";
+import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "./ui/select";
-import { Textarea } from "./ui/textarea";
-import { useState, useEffect } from "react";
 
 interface ArrayItemConfigProps {
   itemType: string;
   itemDescription: string;
-  itemProperties?: any;
-  onUpdate: (config: { 
-    itemType: string; 
-    itemDescription: string; 
-    itemProperties?: any;
-  }) => void;
+  itemProperties?: Record<string, any>;
+  onUpdate: (config: { itemType: string; itemDescription: string; itemProperties?: Record<string, any> }) => void;
 }
 
-const ITEM_TYPES = ["string", "number", "integer", "boolean", "object"];
-
-export function ArrayItemConfig({ 
+const ArrayItemConfig: React.FC<ArrayItemConfigProps> = ({
   itemType,
   itemDescription,
   itemProperties,
-  onUpdate 
-}: ArrayItemConfigProps) {
-  const [type, setType] = useState(itemType || "string");
-  const [description, setDescription] = useState(itemDescription || "");
-  const [objectSchema, setObjectSchema] = useState(
-    itemProperties && type === "object" 
-      ? JSON.stringify(itemProperties, null, 2) 
-      : "{}"
-  );
+  onUpdate,
+}) => {
+  const handleTypeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onUpdate({ itemType: e.target.value, itemDescription, itemProperties });
+  };
 
-  useEffect(() => {
-    let properties = undefined;
-    
-    if (type === "object") {
-      try {
-        properties = JSON.parse(objectSchema);
-      } catch (error) {
-        properties = {};
-      }
-    }
-    
-    onUpdate({
-      itemType: type,
-      itemDescription: description,
-      itemProperties: properties
-    });
-  }, [type, description, objectSchema, onUpdate]);
+  const handleDescriptionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onUpdate({ itemType, itemDescription: e.target.value, itemProperties });
+  };
 
   return (
-    <div className="space-y-4 p-4 border rounded-md">
-      <h4 className="text-sm font-medium">Array Item Configuration</h4>
-      
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="item-type">Item Type</Label>
-          <Select value={type} onValueChange={setType}>
-            <SelectTrigger id="item-type">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {ITEM_TYPES.map(type => (
-                <SelectItem key={type} value={type}>
-                  {type.charAt(0).toUpperCase() + type.slice(1)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="item-description">Item Description</Label>
-          <Textarea
-            id="item-description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Describe the items in this array"
-            rows={1}
-          />
-        </div>
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="array-item-type">Array Item Type</Label>
+        <Input
+          id="array-item-type"
+          value={itemType}
+          onChange={handleTypeChange}
+          placeholder="e.g., string, object"
+        />
       </div>
-      
-      {type === "object" && (
-        <div className="space-y-2">
-          <Label htmlFor="object-schema">Object Schema (JSON)</Label>
-          <Textarea
-            id="object-schema"
-            value={objectSchema}
-            onChange={(e) => setObjectSchema(e.target.value)}
-            placeholder='{ "type": "object", "properties": {...} }'
-            rows={5}
-            className="font-mono text-sm"
-          />
-          <p className="text-xs text-muted-foreground">
-            Define the schema for object items in JSON format
-          </p>
-        </div>
-      )}
+
+      <div className="space-y-2">
+        <Label htmlFor="array-item-description">Array Item Description</Label>
+        <Input
+          id="array-item-description"
+          value={itemDescription}
+          onChange={handleDescriptionChange}
+          placeholder="Describe the array item"
+        />
+      </div>
+
+      {/* Additional fields for object properties can be added here if needed */}
     </div>
   );
-}
+};
 
 export default ArrayItemConfig;
+export type { ArrayItemConfigProps };
+

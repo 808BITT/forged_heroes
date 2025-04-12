@@ -1,19 +1,28 @@
 import { motion } from "framer-motion";
-import { ArrowLeft, ChevronDown, ChevronUp, Copy, Plus, PlusCircle, Save, Trash } from "lucide-react";
+import { ArrowLeft, Plus, PlusCircle, Save, Trash } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { convertDefaultValue } from "../lib/utils";
 import toolsApi, { Category } from "../services/apiService";
 import { Parameter, useToolStore } from "../store/toolStore";
 import ArrayItemConfig from "./ArrayItemConfig";
-import ParameterDependency from "./ParameterDependency";
+import JsonPreview from "./JsonPreview";
+import ParameterEditor from "./ParameterEditor";
 import { Button } from "./ui/button";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible.tsx";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label.tsx";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { Switch } from "./ui/switch";
 import { Textarea } from "./ui/textarea.tsx";
 // Modal components for the category dialog
+import {
+    handleAddParameter,
+    handleRemoveParameter,
+    handleUpdateArrayConfig,
+    handleUpdateEnumValues,
+    handleUpdateObjectProperties,
+    handleUpdateParameter,
+    handleUpdateParameterDependency,
+} from "./toolEditorHandlers";
 import {
     Dialog,
     DialogContent,
@@ -23,17 +32,6 @@ import {
     DialogTitle,
 } from "./ui/dialog";
 import { ToastContainer, useToast } from "./ui/use-toast";
-
-// Updated parameter types
-const PARAMETER_TYPES = [
-  "string", 
-  "number", 
-  "integer", 
-  "boolean", 
-  "object", 
-  "array", 
-  "enum"
-];
 
 export default function ToolEditor() {
     const { id } = useParams<{ id: string }>();
@@ -67,9 +65,10 @@ export default function ToolEditor() {
     // Panel toggle state to manage complexity
     const [openPanels, setOpenPanels] = useState<Record<string, boolean>>({});
 
-    // Fetch categories from API
+    // Consolidated initialization logic
     useEffect(() => {
-        async function fetchCategories() {
+        async function initialize() {
+        // Fetch categories
             try {
                 setIsLoadingCategories(true);
                 setCategoryError("");
@@ -78,20 +77,34 @@ export default function ToolEditor() {
             } catch (error) {
                 console.error("Error fetching categories:", error);
                 setCategoryError("Failed to load categories");
-                // Fallback to default categories
                 setCategories([
                     { id: "default-general", name: "General" },
                     { id: "default-cli", name: "CLI" },
                     { id: "default-api", name: "API" },
-                    { id: "default-data", name: "Data" }
+                    { id: "default-data", name: "Data" },
                 ]);
             } finally {
                 setIsLoadingCategories(false);
             }
+
+            // Fetch tool data if editing
+            if (id) {
+                try {
+                    const response = await toolsApi.getById(id);
+                    setName(response.name);
+                    setDescription(response.description);
+                    setCategory(response.category);
+                    setParameters(response.parameters);
+                } catch (error) {
+                    console.error("Error fetching tool:", error);
+                }
+            } else {
+                setParameters([]);
+            }
         }
-        
-        fetchCategories();
-    }, []);
+
+        initialize();
+    }, [id]);
 
     // Handle adding a new category
     const handleAddCategory = async () => {
@@ -137,28 +150,6 @@ export default function ToolEditor() {
         }
     };
 
-    // Load tool data if editing
-    useEffect(() => {
-        async function fetchTool() {
-            if (id) {
-                try {
-                    const response = await toolsApi.getById(id); // Fetch tool by ID
-                    setName(response.name);
-                    setDescription(response.description);
-                    setCategory(response.category);
-                    setParameters(response.parameters);
-                } catch (error) {
-                    console.error('Error fetching tool:', error);
-                }
-            } else {
-                // No default parameters for new tools
-                setParameters([]);
-            }
-        }
-
-        fetchTool();
-    }, [id]);
-
     // Toggle panel open/closed state
     const togglePanel = (panelId: string) => {
         setOpenPanels(prev => ({
@@ -168,21 +159,6 @@ export default function ToolEditor() {
     };
 
     // Generate and update JSON preview
-    const convertDefaultValue = (type: string, defaultValue: string): any => {
-        if (defaultValue === '') return undefined;
-        
-        switch (type) {
-            case 'number':
-                return Number(defaultValue);
-            case 'integer':
-                return parseInt(defaultValue, 10);
-            case 'boolean':
-                return defaultValue === 'true';
-            default:
-                return defaultValue;
-        }
-    };
-
     useEffect(() => {
         if (!name) return;
         
@@ -285,80 +261,6 @@ export default function ToolEditor() {
         
         setJsonPreview(JSON.stringify(toolSpec, null, 2));
     }, [name, description, parameters]);
-
-    const handleAddParameter = () => {
-        setParameters([
-            ...parameters,
-            {
-                id: `p${Date.now()}`,
-                name: "",
-                type: "string",
-                description: "",
-                required: true,
-                // New fields for enhanced type support
-                format: "",
-                enumValues: [],
-                minimum: "",
-                maximum: "",
-                default: "",
-                arrayItemType: "string",
-                arrayItemDescription: "",
-                objectProperties: {},
-                dependencies: null
-            }
-        ]);
-    };
-
-    const handleUpdateParameter = (id: string, field: keyof Parameter, value: any) => {
-        setParameters(parameters.map(p => 
-            p.id === id ? { ...p, [field]: value } : p
-        ));
-    };
-
-    const handleUpdateParameterDependency = (id: string, dependencies: any) => {
-        setParameters(parameters.map(p => 
-            p.id === id ? { ...p, dependencies } : p
-        ));
-    };
-
-    const handleUpdateArrayConfig = (id: string, config: any) => {
-        setParameters(parameters.map(p => 
-            p.id === id ? { 
-                ...p, 
-                arrayItemType: config.itemType,
-                arrayItemDescription: config.itemDescription,
-                objectProperties: config.itemType === 'object' ? config.itemProperties : p.objectProperties
-            } : p
-        ));
-    };
-
-    const handleUpdateObjectProperties = (id: string, propertiesText: string) => {
-        try {
-            const properties = JSON.parse(propertiesText);
-            setParameters(parameters.map(p => 
-                p.id === id ? { ...p, objectProperties: properties } : p
-            ));
-        } catch (error) {
-            // Handle invalid JSON
-            console.error('Invalid object properties JSON:', error);
-        }
-    };
-
-    const handleUpdateEnumValues = (id: string, valuesText: string) => {
-        try {
-            // Split by comma and trim whitespace
-            const values = valuesText.split(',').map(v => v.trim()).filter(v => v);
-            setParameters(parameters.map(p => 
-                p.id === id ? { ...p, enumValues: values } : p
-            ));
-        } catch (error) {
-            console.error('Error updating enum values:', error);
-        }
-    };
-
-    const handleRemoveParameter = (id: string) => {
-        setParameters(parameters.filter(p => p.id !== id));
-    };
 
     const validateForm = () => {
         const newErrors: string[] = [];
@@ -516,7 +418,7 @@ export default function ToolEditor() {
                         <Label htmlFor={`param-format-${param.id}`}>Format (Optional)</Label>
                         <Select
                             value={param.format || ""}
-                            onValueChange={(value) => handleUpdateParameter(param.id, 'format', value)}
+                            onValueChange={(value) => handleUpdateParameter(param.id, 'format', value, parameters, setParameters)}
                         >
                             <SelectTrigger id={`param-format-${param.id}`}>
                                 <SelectValue placeholder="No format restriction" />
@@ -544,7 +446,7 @@ export default function ToolEditor() {
                                 id={`param-min-${param.id}`}
                                 type="number"
                                 value={param.minimum}
-                                onChange={(e) => handleUpdateParameter(param.id, 'minimum', e.target.value)}
+                                onChange={(e) => handleUpdateParameter(param.id, 'minimum', e.target.value, parameters, setParameters)}
                                 placeholder="No minimum"
                             />
                         </div>
@@ -554,7 +456,7 @@ export default function ToolEditor() {
                                 id={`param-max-${param.id}`}
                                 type="number"
                                 value={param.maximum}
-                                onChange={(e) => handleUpdateParameter(param.id, 'maximum', e.target.value)}
+                                onChange={(e) => handleUpdateParameter(param.id, 'maximum', e.target.value, parameters, setParameters)}
                                 placeholder="No maximum"
                             />
                         </div>
@@ -568,7 +470,7 @@ export default function ToolEditor() {
                         <Input
                             id={`param-enum-${param.id}`}
                             value={param.enumValues ? param.enumValues.join(', ') : ''}
-                            onChange={(e) => handleUpdateEnumValues(param.id, e.target.value)}
+                            onChange={(e) => handleUpdateEnumValues(parameters, setParameters, param.id, e.target.value)}
                             placeholder="value1, value2, value3"
                         />
                         <p className="text-xs text-muted-foreground">
@@ -583,7 +485,16 @@ export default function ToolEditor() {
                         itemType={param.arrayItemType || 'string'}
                         itemDescription={param.arrayItemDescription || ''}
                         itemProperties={param.objectProperties}
-                        onUpdate={(config) => handleUpdateArrayConfig(param.id, config)}
+                        onUpdate={(config) => {
+                            handleUpdateArrayConfig(param.id, {
+                                itemType: config.itemType,
+                                itemDescription: config.itemDescription,
+                                itemProperties: config.itemProperties,
+                                onUpdate: function (config: { itemType: string; itemDescription: string; itemProperties?: Record<string, any>; }): void {
+                                    throw new Error("Function not implemented.");
+                                }
+                            }, parameters, setParameters);
+                        }}
                     />
                 );
                 
@@ -594,7 +505,7 @@ export default function ToolEditor() {
                         <Textarea
                             id={`param-object-${param.id}`}
                             value={JSON.stringify(param.objectProperties || {}, null, 2)}
-                            onChange={(e) => handleUpdateObjectProperties(param.id, e.target.value)}
+                            onChange={(e) => handleUpdateObjectProperties(parameters, setParameters, param.id, e.target.value)}
                             placeholder='{ "property": { "type": "string", "description": "Property description" } }'
                             rows={5}
                             className="font-mono text-sm"
@@ -735,195 +646,32 @@ export default function ToolEditor() {
                                     type="button" 
                                     variant="outline" 
                                     size="sm" 
-                                    onClick={handleAddParameter}
+                                    onClick={() => handleAddParameter(parameters, setParameters)}
                                 >
                                     <Plus className="h-4 w-4 mr-1" />
                                     Add Parameter
                                 </Button>
                             </div>
 
-                            <div className="space-y-4">
-                                {parameters.map((param, index) => (
-                                    <Collapsible 
-                                        key={param.id} 
-                                        open={openPanels[param.id]} 
-                                        onOpenChange={() => togglePanel(param.id)}
-                                        className="rounded-md border"
-                                    >
-                                        <div className="p-4">
-                                            <div className="flex items-center justify-between">
-                                                <h3 className="text-sm font-medium">
-                                                    Parameter {index + 1}: {param.name || "Unnamed Parameter"}
-                                                </h3>
-                                                <div className="flex items-center gap-2">
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleRemoveParameter(param.id);
-                                                        }}
-                                                        className="h-8 w-8 p-0"
-                                                    >
-                                                        <Trash className="h-4 w-4 text-red-500 hover:text-red-700" />
-                                                    </Button>
-                                                    <CollapsibleTrigger asChild>
-                                                        <Button variant="ghost" size="sm">
-                                                            {openPanels[param.id] ? (
-                                                                <ChevronUp className="h-4 w-4" />
-                                                            ) : (
-                                                                <ChevronDown className="h-4 w-4" />
-                                                            )}
-                                                        </Button>
-                                                    </CollapsibleTrigger>
-                                                </div>
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-4 mt-2">
-                                                <div className="space-y-2">
-                                                    <Label htmlFor={`param-name-${param.id}`}>
-                                                        Parameter Name
-                                                    </Label>
-                                                    <Input
-                                                        id={`param-name-${param.id}`}
-                                                        value={param.name}
-                                                        onChange={(e) => 
-                                                            handleUpdateParameter(param.id, 'name', e.target.value)
-                                                        }
-                                                        placeholder="e.g. location"
-                                                        className={highlightedFields.includes(`param-name-${param.id}`) ? "border-red-500" : ""}
-                                                    />
-                                                </div>
-                                                
-                                                <div className="space-y-2">
-                                                    <Label htmlFor={`param-type-${param.id}`}>Type</Label>
-                                                    <Select
-                                                        value={param.type}
-                                                        onValueChange={(value) => 
-                                                            handleUpdateParameter(param.id, 'type', value)
-                                                        }
-                                                    >
-                                                        <SelectTrigger id={`param-type-${param.id}`}>
-                                                            <SelectValue />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            {PARAMETER_TYPES.map(type => (
-                                                                <SelectItem key={type} value={type}>
-                                                                    {type.charAt(0).toUpperCase() + type.slice(1)}
-                                                                </SelectItem>
-                                                            ))}
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
-                                            </div>
-                                            
-                                            <div className="mt-4">
-                                                <div className="space-y-2">
-                                                    <Label htmlFor={`param-desc-${param.id}`}>
-                                                        Description
-                                                    </Label>
-                                                    <Input
-                                                        id={`param-desc-${param.id}`}
-                                                        value={param.description}
-                                                        onChange={(e) => 
-                                                            handleUpdateParameter(param.id, 'description', e.target.value)
-                                                        }
-                                                        placeholder="Describe the parameter"
-                                                        className={highlightedFields.includes(`param-desc-${param.id}`) ? "border-red-500" : ""}
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            <div className="flex items-center space-x-2 mt-4">
-                                                <Switch
-                                                    id={`param-required-${param.id}`}
-                                                    checked={param.required}
-                                                    onCheckedChange={(checked) => 
-                                                        handleUpdateParameter(param.id, 'required', checked)
-                                                    }
-                                                />
-                                                <Label htmlFor={`param-required-${param.id}`}>
-                                                    Required parameter
-                                                </Label>
-                                            </div>
-                                        </div>
-
-                                        <CollapsibleContent>
-                                            <div className="p-4 border-t space-y-4">
-                                                {/* Default value field - common for all types */}
-                                                <div className="space-y-2">
-                                                    <Label htmlFor={`param-default-${param.id}`}>Default Value (Optional)</Label>
-                                                    <Input
-                                                        id={`param-default-${param.id}`}
-                                                        value={param.default || ''}
-                                                        onChange={(e) => handleUpdateParameter(param.id, 'default', e.target.value)}
-                                                        placeholder="No default value"
-                                                    />
-                                                </div>
-                                                
-                                                {/* Type-specific configuration */}
-                                                {renderTypeSpecificFields(param)}
-                                                
-                                                {/* Parameter Dependencies */}
-                                                <ParameterDependency 
-                                                    parameter={param}
-                                                    allParameters={parameters}
-                                                    onUpdate={(deps) => handleUpdateParameterDependency(param.id, deps)}
-                                                />
-                                                
-                                                {parameters.length > 1 && (
-                                                    <div className="flex justify-end mt-4">
-                                                        <Button
-                                                            type="button"
-                                                            variant="destructive"
-                                                            size="sm"
-                                                            onClick={() => handleRemoveParameter(param.id)}
-                                                        >
-                                                            <Trash className="h-4 w-4 mr-1" />
-                                                            Remove Parameter
-                                                        </Button>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </CollapsibleContent>
-                                    </Collapsible>
-                                ))}
-                            </div>
+                            {/* Parameter Editor */}
+                            <ParameterEditor
+                                parameters={parameters}
+                                openPanels={openPanels}
+                                highlightedFields={highlightedFields}
+                                onTogglePanel={togglePanel}
+                                onUpdateParameter={(id, field, value) => handleUpdateParameter(id, field, value, parameters, setParameters)}
+                                onUpdateParameterDependency={(id, dependencies) => handleUpdateParameterDependency(parameters, setParameters, id, dependencies)}
+                                onUpdateArrayConfig={(id, config) => handleUpdateArrayConfig(id, config, parameters, setParameters)}
+                                onUpdateObjectProperties={(id, propertiesText) => handleUpdateObjectProperties(parameters, setParameters, id, propertiesText)}
+                                onUpdateEnumValues={(id, valuesText) => handleUpdateEnumValues(parameters, setParameters, id, valuesText)}
+                                onRemoveParameter={(id) => handleRemoveParameter(id, parameters, setParameters)}
+                                renderTypeSpecificFields={renderTypeSpecificFields}
+                            />
                         </div>
                     </motion.div>
 
                     {/* JSON Preview */}
-                    <motion.div
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="space-y-6"
-                    >
-                        <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                                <Label>JSON Tool Specification</Label>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={copyJsonToClipboard}
-                                    className="gap-2"
-                                >
-                                    <Copy className="h-4 w-4" />
-                                    {copied ? "Copied!" : "Copy"}
-                                </Button>
-                            </div>
-
-                            <div className="rounded-md border bg-muted/50 p-4">
-                                <pre className="overflow-auto text-xs text-muted-foreground text-left max-h-[500px] whitespace-pre-wrap">
-                                    {jsonPreview || "Complete the form to generate JSON"}
-                                </pre>
-                            </div>
-                            
-                            <p className="text-sm text-muted-foreground mt-2">
-                                This JSON can be used directly with Large Language Models to define the tool's functionality.
-                            </p>
-                        </div>
-                    </motion.div>
+                    <JsonPreview jsonPreview={jsonPreview} onCopy={copyJsonToClipboard} copied={copied} />
                 </div>
 
                 {/* Add Category Modal */}
