@@ -6,4 +6,4 @@ test-results.json
 dist
 dist-ssr
 *.local
-server\data\tools.db
+server/data/tools.db
