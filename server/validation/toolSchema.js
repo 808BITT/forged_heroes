@@ -8,26 +8,26 @@ const toolSchema = {
   properties: {
     name: { type: 'string' },
     description: { type: 'string' },
-    version: { type: 'string' },
-    parameters: {
+    inputSchema: {
       type: 'object',
       properties: {
         type: { type: 'string', enum: ['object'] },
-        properties: { type: 'object' },
-        required: { type: 'array', items: { type: 'string' } }
-      },
-      required: ['type', 'properties']
-    },
-    returns: {
-      type: 'object',
-      properties: {
-        type: { type: 'string' },
         properties: { type: 'object' }
       },
       required: ['type', 'properties']
+    },
+    annotations: {
+      type: 'object',
+      properties: {
+        title: { type: 'string' },
+        readOnlyHint: { type: 'boolean' },
+        destructiveHint: { type: 'boolean' },
+        idempotentHint: { type: 'boolean' },
+        openWorldHint: { type: 'boolean' }
+      }
     }
   },
-  required: ['name', 'description', 'version', 'parameters', 'returns']
+  required: ['name', 'inputSchema']
 };
 
 // Compile the schema

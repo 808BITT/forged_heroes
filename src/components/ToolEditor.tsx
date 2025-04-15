@@ -31,7 +31,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "./ui/dialog";
-import { ToastContainer, useToast } from "./ui/use-toast";
+import { useToast } from "./ui/use-toast";
 
 export default function ToolEditor() {
     const { id } = useParams<{ id: string }>();
@@ -94,7 +94,11 @@ export default function ToolEditor() {
                     setName(response.name);
                     setDescription(response.description);
                     setCategory(response.category);
-                    setParameters(response.parameters);
+                    // Ensure parameters are an array
+                    const parsedParameters = Array.isArray(response.parameters)
+                        ? response.parameters
+                        : []; // Default to an empty array if not valid
+                    setParameters(parsedParameters);
                 } catch (error) {
                     console.error("Error fetching tool:", error);
                 }
@@ -169,7 +173,7 @@ export default function ToolEditor() {
                 description: description,
                 parameters: {
                     type: "object",
-                    properties: parameters.reduce((acc, param) => {
+                    properties: parameters.reduce((acc: Record<string, any>, param) => {
                         if (param.name) {
                             // Base property definition
                             const paramSpec: any = {
@@ -369,31 +373,52 @@ export default function ToolEditor() {
         const toolData = {
             name,
             description,
-            category,
             inputSchema: {
                 type: "object",
                 properties: parameters.reduce((acc: Record<string, any>, param) => {
                     if (param.name) {
-                        const paramSpec: any = {
+                        acc[param.name] = {
                             type: param.type,
                             description: param.description,
+                            ...(param.default !== undefined && { default: param.default }),
+                            ...(param.enumValues && { enum: param.enumValues }),
+                            ...(param.minimum && { minimum: Number(param.minimum) }),
+                            ...(param.maximum && { maximum: Number(param.maximum) }),
+                            ...(param.type === "array" && param.arrayItemType && {
+                                items: { type: param.arrayItemType },
+                            }),
+                            ...(param.type === "object" && param.objectProperties && {
+                                properties: param.objectProperties,
+                            }),
                         };
-
-                        if (param.default !== undefined) {
-                            paramSpec.default = param.default;
-                        }
-
-                        if (param.type === "array" && param.arrayItemType) {
-                            paramSpec.items = { type: param.arrayItemType };
-                        }
-
-                        acc[param.name] = paramSpec;
                     }
                     return acc;
                 }, {}),
-                required: parameters.filter((param) => param.required).map((param) => param.name),
             },
-            parameters: parameters.map((param) => ({
+            annotations: {
+                title: name,
+                readOnlyHint: false,
+                destructiveHint: false,
+                idempotentHint: true,
+                openWorldHint: false,
+            },
+            version: "1.0",
+            category,
+            parameters,
+            returns: {
+                type: "object",
+                properties: {
+                    success: {
+                        type: "boolean",
+                        description: "Whether the operation was successful",
+                    },
+                    result: {
+                        type: "object",
+                        description: "Result data from the tool execution",
+                    },
+                },
+            },
+            rawParameters: parameters.map((param) => ({
                 id: param.id,
                 name: param.name,
                 type: param.type,
@@ -408,7 +433,7 @@ export default function ToolEditor() {
                 objectProperties: param.objectProperties,
                 dependencies: param.dependencies,
             })),
-            status: "active" as "active", // Explicitly cast to match the expected type
+            status: "active" as "active",
             lastModified: new Date().toISOString(),
         };
 
@@ -417,21 +442,57 @@ export default function ToolEditor() {
                 await updateTool(id, toolData);
             } else {
                 const newId = await addTool(toolData);
-                if (newId) {
-                    navigate(`/tools/${newId}`);
-                } else {
+                if (!newId) {
                     console.error("Failed to add tool: No ID returned");
+                    return;
                 }
             }
+
+            navigate("/tools");
+            console.log("Start Toast"); // Debugging log
+            addToast({
+                title: "Success",
+                description: "Tool saved successfully!",
+                variant: "success",
+            });
         } catch (error) {
             console.error("Error saving tool:", error);
+            addToast({
+                title: "Error",
+                description: "Failed to save the tool.",
+                variant: "error",
+            });
         }
     };
 
     const handleDelete = () => {
-        if (id && confirm("Are you sure you want to delete this tool?")) {
-            deleteTool(id);
-            navigate("/dashboard");
+        if (id) {
+            setCategoryModalOpen(true);
+        }
+    };
+
+    const confirmDelete = async () => {
+        try {
+            if (id) {
+                await deleteTool(id);
+            } else {
+                console.error("Tool ID is undefined. Cannot delete tool.");
+            }
+            navigate("/tools");
+            addToast({
+                title: "Tool Deleted",
+                description: "The tool has been successfully deleted.",
+                variant: "success",
+            });
+        } catch (error) {
+            console.error("Error deleting tool:", error);
+            addToast({
+                title: "Error",
+                description: "Failed to delete the tool.",
+                variant: "error",
+            });
+        } finally {
+            setCategoryModalOpen(false);
         }
     };
 
@@ -754,8 +815,27 @@ export default function ToolEditor() {
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
+
+                {/* Delete Confirmation Modal */}
+                <Dialog open={categoryModalOpen} onOpenChange={setCategoryModalOpen}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Confirm Delete</DialogTitle>
+                            <DialogDescription>
+                                Are you sure you want to delete this tool? This action cannot be undone.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setCategoryModalOpen(false)}>
+                                Cancel
+                            </Button>
+                            <Button variant="destructive" onClick={confirmDelete}>
+                                Delete
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </motion.div>
-            <ToastContainer toasts={toasts} />
         </>
     );
 }

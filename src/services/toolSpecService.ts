@@ -1,10 +1,27 @@
-import { Parameter, Tool } from '../store/toolStore';
+import { Parameter } from '../store/toolStore';
 import toolsApi from './apiService';
 
 // Import tool specs directly
 import executeCommandSpec from '../../tool_specs/cli/execute_command.json';
 import remoteExecutionSpec from '../../tool_specs/cli/remote_execution.json';
 import exampleToolSpec from '../../tool_specs/example_tool_spec.json';
+
+// Updated Tool interface to match the new specification
+export interface Tool {
+  name: string; // Unique identifier for the tool
+  description?: string; // Human-readable description
+  inputSchema: {
+    type: "object";
+    properties: Record<string, any>; // Tool-specific parameters
+  };
+  annotations?: {
+    title?: string; // Human-readable title for the tool
+    readOnlyHint?: boolean; // If true, the tool does not modify its environment
+    destructiveHint?: boolean; // If true, the tool may perform destructive updates
+    idempotentHint?: boolean; // If true, repeated calls with same args have no additional effect
+    openWorldHint?: boolean; // If true, tool interacts with external entities
+  };
+}
 
 // Helper function to convert tool spec format to the application's Tool format
 export const convertSpecToTool = (spec: any, id: string, category: string): Tool => {
@@ -32,13 +49,19 @@ export const convertSpecToTool = (spec: any, id: string, category: string): Tool
 
     // Create a Tool object from the spec
     return {
-        id,
         name: functionSpec.name,
         description: functionSpec.description || '',
-        category,
-        status: 'active',
-        parameters,
-        lastModified: new Date().toISOString().split('T')[0]
+        inputSchema: {
+            type: "object",
+            properties: functionSpec.parameters.properties || {}
+        },
+        annotations: {
+            title: functionSpec.title || '',
+            readOnlyHint: functionSpec.readOnlyHint || false,
+            destructiveHint: functionSpec.destructiveHint || false,
+            idempotentHint: functionSpec.idempotentHint || false,
+            openWorldHint: functionSpec.openWorldHint || false
+        }
     };
 };
 

@@ -31,7 +31,7 @@ Llero is a modular developer platform for building AI-powered agents that operat
 ### Local Development
 
 ```bash
-git clone https://github.com/yourusername/llero.git
+git clone https://github.com/808BiTT/llero.git
 cd llero
 npm install
 npm run dev

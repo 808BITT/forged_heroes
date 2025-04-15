@@ -23,8 +23,8 @@ const swaggerOptions = {
     openapi: '3.0.0',
     info: {
       title: 'Forged Heroes API',
-      version: '0.0.1',
-      description: 'API documentation for Forged Heroes',
+      version: '0.1.0',
+      description: 'API documentation for llero',
     },
     servers: [
       {

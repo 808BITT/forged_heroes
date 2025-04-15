@@ -5,15 +5,15 @@ const getApiUrl = () => {
     try {
         // For Vite environment
         if (typeof import.meta.env !== 'undefined') {
-            return import.meta.env.VITE_API_URL || 'http://192.168.1.209:3001/api';
+            return import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
         }
     } catch (e) {
         // For Jest environment
-        return 'http://192.168.1.209:3001/api';
+        return 'http://localhost:3001/api';
     }
 
     // Default fallback
-    return 'http://192.168.1.209:3001/api';
+    return 'http://localhost:3001/api';
 };
 
 // Initialize API_URL using the helper function

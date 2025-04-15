@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { ArrowRight, Filter, Plus, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import toolsApi from "../services/apiService";
 import { useToolStore } from "../store/toolStore";
 import { Button } from "./ui/button";
 import { GlowCard, GlowEffect } from "./ui/glow-effect";
@@ -15,26 +16,42 @@ interface ToolListProps {
 }
 
 export default function ToolList({ hideHeader = false, searchTerm: externalSearchTerm }: ToolListProps) {
-    const tools = useToolStore((state) => state.getAllTools());
-    const loadToolSpecifications = useToolStore((state) => state.loadToolSpecifications);
-    const isLoaded = useToolStore((state) => state.isLoaded);
-    const isLoading = useToolStore((state) => state.isLoading);
+    interface Tool {
+        id: string;
+        name: string;
+        description?: string;
+        category?: string;
+        parameters?: string | ToolParameter[];
+    }
+
+    const [tools, setTools] = useState<Tool[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [internalSearchTerm, setInternalSearchTerm] = useState("");
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     const navigate = useNavigate();
-    
-    // Use external search term if provided, or internal otherwise
+
+    useEffect(() => {
+        async function fetchTools() {
+            setIsLoading(true);
+            try {
+                let allTools = await toolsApi.getAll();
+                // Convert toolsData to an array if it's not already
+                let toolsData = Array.isArray(allTools) ? allTools : Object.values(allTools);
+                setTools(toolsData);
+            } catch (error) {
+                console.error('Error fetching tools:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        }
+
+        fetchTools();
+    }, []);
+
     const searchTerm = externalSearchTerm !== undefined ? externalSearchTerm : internalSearchTerm;
 
     useEffect(() => {
-        if (!isLoaded) {
-            loadToolSpecifications();
-        }
-    }, [isLoaded, loadToolSpecifications]);
-
-    // Clear selected category when search term changes
-    useEffect(() => {
-        if (searchTerm) {
+        if (searchTerm && selectedCategory !== null) {
             setSelectedCategory(null);
         }
     }, [searchTerm]);
@@ -58,7 +75,6 @@ export default function ToolList({ hideHeader = false, searchTerm: externalSearc
 
     const categories = Object.keys(toolsByCategory);
 
-    // Helper function to parse parameters if they're stored as a string
     interface ToolParameter {
         id?: string;
         name: string;
@@ -70,7 +86,6 @@ export default function ToolList({ hideHeader = false, searchTerm: externalSearc
     const getParameters = (tool: { parameters?: string | ToolParameter[] }): ToolParameter[] => {
         if (!tool.parameters) return [];
         
-        // If parameters is a string, parse it
         if (typeof tool.parameters === 'string') {
             try {
                 return JSON.parse(tool.parameters) as ToolParameter[];
@@ -80,7 +95,6 @@ export default function ToolList({ hideHeader = false, searchTerm: externalSearc
             }
         }
         
-        // If it's already an array, return it
         if (Array.isArray(tool.parameters)) {
             return tool.parameters;
         }
@@ -88,19 +102,17 @@ export default function ToolList({ hideHeader = false, searchTerm: externalSearc
         return [];
     };
 
-    // Get a color based on category (for visual variety)
     const getCategoryColor = (category: string) => {
         const colors = [
-            "rgba(26, 188, 156, 0.6)", // Emerald
-            "rgba(52, 152, 219, 0.6)", // Blue
-            "rgba(155, 89, 182, 0.6)", // Purple
-            "rgba(52, 73, 94, 0.6)",   // Dark
-            "rgba(241, 196, 15, 0.6)",  // Yellow
-            "rgba(230, 126, 34, 0.6)",  // Orange
-            "rgba(231, 76, 60, 0.6)",   // Red
+            "rgba(26, 188, 156, 0.6)", 
+            "rgba(52, 152, 219, 0.6)", 
+            "rgba(155, 89, 182, 0.6)", 
+            "rgba(52, 73, 94, 0.6)",   
+            "rgba(241, 196, 15, 0.6)",  
+            "rgba(230, 126, 34, 0.6)",  
+            "rgba(231, 76, 60, 0.6)",   
         ];
         
-        // Use a hash of the category name to select a color
         let hash = 0;
         for (let i = 0; i < category.length; i++) {
             hash = category.charCodeAt(i) + ((hash << 5) - hash);
@@ -174,6 +186,14 @@ export default function ToolList({ hideHeader = false, searchTerm: externalSearc
         </Tooltip>
     );
 
+    if (isLoading) {
+        return (
+            <div className="flex justify-center items-center h-full">
+                <LoadingSpinner />
+            </div>
+        );
+    }
+
     return (
         <div className="space-y-8">
             {!hideHeader && (
@@ -199,7 +219,7 @@ export default function ToolList({ hideHeader = false, searchTerm: externalSearc
 
             {externalSearchTerm === undefined && (
                 <div className="flex items-center gap-4">
-                    <div className={`relative flex-1 border rounded-lg ${internalSearchTerm ? 'border-primary/50' : 'border-primary/20'} transition-colors duration-300`} onClick={() => document.getElementById('search-input')?.focus()}>
+                    <div className={`w-full focus:outline-none focus:border-none relative w-[927px] border rounded-lg flex-1 ${internalSearchTerm ? 'border-primary/50' : 'border-primary/20'} transition-colors duration-300`} onClick={() => document.getElementById('search-input')?.focus()}>
                         <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                         <Input
                             id="search-input"
@@ -207,7 +227,7 @@ export default function ToolList({ hideHeader = false, searchTerm: externalSearc
                             placeholder="Search tools..."
                             value={internalSearchTerm}
                             onChange={(e) => setInternalSearchTerm(e.target.value)}
-                            className="pl-10 flex-1 focus:outline-none"
+                            className="pl-10 focus:outline-none focus:border-none w-full"
                         />
                         {internalSearchTerm && (
                             <motion.button
@@ -291,37 +311,33 @@ export default function ToolList({ hideHeader = false, searchTerm: externalSearc
                         <span className="text-base font-normal ml-2 text-muted-foreground">({filteredTools.length} tools)</span>
                     </h2>
 
-                    {isLoading ? (
-                        <LoadingSpinner />
-                    ) : (
-                        <motion.div 
-                            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ staggerChildren: 0.05 }}
-                            layout
-                        >
-                            {filteredTools.map((tool) => {
-                                const parameters = getParameters(tool);
-                                const category = tool.category || "Uncategorized";
-                                const color = getCategoryColor(category);
-                                
-                                return renderToolCard(tool, color, parameters);
-                            })}
+                    <motion.div 
+                        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ staggerChildren: 0.05 }}
+                        layout
+                    >
+                        {filteredTools.map((tool) => {
+                            const parameters = getParameters(tool);
+                            const category = tool.category || "Uncategorized";
+                            const color = getCategoryColor(category);
+                            
+                            return renderToolCard(tool, color, parameters);
+                        })}
 
-                            {filteredTools.length === 0 && (
-                                <div className="col-span-full text-center py-12 text-muted-foreground">
-                                    {searchTerm ? (
-                                        <>No tools found matching "{searchTerm}"</>
-                                    ) : selectedCategory ? (
-                                        <>No tools found in category "{selectedCategory}"</>
-                                    ) : (
-                                        <>No tools found</>
-                                    )}
-                                </div>
-                            )}
-                        </motion.div>
-                    )}
+                        {filteredTools.length === 0 && (
+                            <div className="col-span-full text-center py-12 text-muted-foreground">
+                                {searchTerm ? (
+                                    <>No tools found matching "{searchTerm}"</>
+                                ) : selectedCategory ? (
+                                    <>No tools found in category "{selectedCategory}"</>
+                                ) : (
+                                    <>No tools found</>
+                                )}
+                            </div>
+                        )}
+                    </motion.div>
                 </div>
             </div>
         </div>
