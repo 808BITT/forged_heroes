@@ -1,0 +1,27 @@
+/* App-specific styles - theme is defined in index.css */
+
+/* Logo styles */
+.logo {
+  /* Removed fixed height constraint to allow individual sizing */
+  will-change: filter;
+  transition: filter 300ms;
+}
+
+.logo:hover {
+  filter: drop-shadow(0 0 0.5em hsl(var(--primary)));
+}
+
+/* Card styles */
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}
+
+/* Optimized CSS transitions and animations */
+.element-to-animate {
+  will-change: transform, opacity;
+  transition: transform 300ms ease, opacity 300ms ease;
+}

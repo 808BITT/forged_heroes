@@ -1,0 +1,9 @@
+.env
+node_modules
+.vite
+coverage
+test-results.json
+dist
+dist-ssr
+*.local
+server/data/tools.db

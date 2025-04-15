@@ -1,0 +1,44 @@
+{
+  "name": "Remote Execution",
+  "description": "Execute a command on a remote system via SSH",
+  "version": "1.0.0",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "host": {
+        "type": "string",
+        "description": "Remote host to connect to"
+      },
+      "command": {
+        "type": "string",
+        "description": "The command to execute"
+      },
+      "username": {
+        "type": "string",
+        "description": "Username for SSH connection"
+      },
+      "privateKeyPath": {
+        "type": "string",
+        "description": "Path to SSH private key file"
+      }
+    },
+    "required": ["host", "command"]
+  },
+  "returns": {
+    "type": "object",
+    "properties": {
+      "stdout": {
+        "type": "string",
+        "description": "Standard output from command execution"
+      },
+      "stderr": {
+        "type": "string",
+        "description": "Standard error from command execution"
+      },
+      "exitCode": {
+        "type": "number",
+        "description": "Exit code from command execution"
+      }
+    }
+  }
+}
