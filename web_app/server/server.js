@@ -189,7 +189,7 @@ app.get('/api/tools', async (req, res) => {
         console.error('Database query error:', err);
         return res.status(500).json({ error: 'Failed to fetch tools' });
       }
-      console.log('Database query result:', rows); // Debugging log
+      // console.log('Database query result:', rows); // Debugging log
       res.json(rows);
     });
     db.close();

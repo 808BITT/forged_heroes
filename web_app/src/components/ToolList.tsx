@@ -199,14 +199,15 @@ export default function ToolList({ hideHeader = false, searchTerm: externalSearc
 
             {externalSearchTerm === undefined && (
                 <div className="flex items-center gap-4">
-                    <div className="relative flex-1">
+                    <div className={`relative flex-1 border rounded-lg ${internalSearchTerm ? 'border-primary/50' : 'border-primary/20'} transition-colors duration-300`} onClick={() => document.getElementById('search-input')?.focus()}>
                         <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                         <Input
+                            id="search-input"
                             type="text"
                             placeholder="Search tools..."
                             value={internalSearchTerm}
                             onChange={(e) => setInternalSearchTerm(e.target.value)}
-                            className="pl-10 flex-1 border-primary/20 focus-within:border-primary/50 transition-colors duration-300"
+                            className="pl-10 flex-1 focus:outline-none"
                         />
                         {internalSearchTerm && (
                             <motion.button
