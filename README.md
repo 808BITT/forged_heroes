@@ -1,173 +1,118 @@
-# Forge: LLM Tool Specification Builder
+# Llero 🦾
 
-![Forge Logo](public/forge-logo.svg)
+Llero is a modular developer platform for building AI-powered agents that operate through JSON-defined tools. It empowers developers to define, test, and orchestrate "function-calling" LLM workflows using customizable tool specs and structured agent logic.
 
-Forge is a modern web application for creating, managing, and sharing tool specifications for Large Language Models (LLMs). It provides an intuitive interface for building function calling specifications that can be used with LLMs like GPT-4 to give them access to external tools and APIs.
+> **Llero = LLM Hero**
 
-## Purpose
+---
 
-Equip your "LLM Heroes" with powerful tools! Forge makes it easy to define structured JSON tool specifications that can be copy-pasted into LLM prompts, enabling models to request specific actions through function calling.
+## ✨ Features
 
-## Features
+- **Forge** – Visual builder for LLM tool specifications (JSON, OpenAI-style)
+- **Commander Lite** – Chat-based agent interface using prebuilt tools
+- **Barracks (Coming Soon)** – Full agent management and customization
+- **Academy (Coming Soon)** – Connect external LLM providers (OpenAI, Anthropic, etc.)
+- **Armory (Coming Soon)** – Tool explorer with visual relationships
+- **Command Center (Coming Soon)** – Orchestrate workflows via multi-agent chat
 
-- **Visual Tool Editor**: Create and edit tool specifications with an intuitive UI
-- **Parameter Management**: Define tool parameters with type validation and descriptions
-- **JSON Generation**: Automatically convert your tool definitions to proper JSON format
-- **Tool Organization**: Categorize tools and search through your collection
-- **The Armory**: Interactive visualization of tool schemas with fluid animations and category-based exploration
-- **API Backend**: Store tools persistently on a server for sharing and reuse
-- **Responsive Design**: Works on desktop and mobile devices
-- **Tool Testing**: Test your tool specifications against a mock LLM to ensure they function as expected
-- **Parameter Dependencies**: Define dependencies between parameters, so that the visibility and requirements of one parameter can depend on the value of another.
-- **Enhanced Tool Editor**: Support for advanced parameter types and dependencies.
-- **New Armory Page**: Interactive visualization of tool schemas.
-- **Improved Tool Management and Testing Features**: Enhanced tool management and testing features.
+---
 
-## Technology Stack
+## 🎯 Use Cases
 
-- **Frontend**: React, TypeScript, Vite, Tailwind CSS, Zustand, Radix UI
-- **Backend**: Node.js, Express (under development)
-- **Styling**: TailwindCSS with Radix UI components
-- **State Management**: Zustand
-- **Animation**: Framer Motion
-- **Routing**: React Router
+- Developers creating JSON function specs for GPT-like models
+- Teams prototyping tools to integrate with LLMs
+- SaaS builders orchestrating multi-agent pipelines
+- Educators visualizing function-calling interfaces for teaching AI
 
-## Getting Started
+---
 
-### Prerequisites
+## 🚀 Getting Started
 
-- Node.js v18+ and npm
+### Local Development
 
-### Installation
+```bash
+git clone https://github.com/yourusername/llero.git
+cd llero
+npm install
+npm run dev
 
-1. Clone the repository:
-
-   ```bash
-   git clone https://github.com/yourusername/forge.git
-   cd forge/web_app
-   ```
-
-2. Install frontend dependencies:
-
-   ```bash
-   npm install
-   ```
-
-### Running the Application
-
-1. Start the frontend development server:
-
-   ```bash
-   npm run dev
-   ```
-
-3. Open your browser and navigate to:
-
-   ```
-   http://localhost:5173
-   ```
-
-## Usage Guide
-
-### Creating a Tool
-
-1. Navigate to the "Tools" page and click "New Tool"
-2. Fill in the tool name and description
-3. Add parameters by clicking "Add Parameter"
-4. For each parameter, specify:
-   - Name
-   - Type (string, number, boolean, object, array)
-   - Description
-   - Whether it's required
-   - Define dependencies on other parameters, if needed
-5. Click "Save" to store your tool
-6. Use the "Copy" button to copy the JSON specification for use with an LLM
-7. Use the "Test" button to test your tool against a mock LLM
-
-### Using the Armory
-
-The Armory provides an interactive, visually engaging way to explore your tool collection:
-
-1. Access the Armory by clicking "Armory" in the navigation bar or "Enter the Armory" on the Tools page
-2. Browse tools by category in the three-panel interface:
-   - Left panel: Select a tool category
-   - Middle panel: Choose a specific tool from the selected category
-   - Right panel: View detailed parameter information for the selected tool
-3. Enjoy the fluid animations and interactive elements:
-   - Green indicators highlight required parameters
-   - Gray indicators show optional parameters
-   - Hover effects provide additional context and visual feedback
-
-### Example Tool JSON
-
-```json
-{
-  "type": "function",
-  "function": {
-    "name": "get_weather",
-    "description": "Get current weather for a specified location",
-    "parameters": {
-      "type": "object",
-      "properties": {
-        "location": {
-          "type": "string",
-          "description": "City name or address"
-        },
-        "units": {
-          "type": "string",
-          "description": "Temperature units (celsius or fahrenheit)"
-        }
-      },
-      "required": ["location"]
-    }
-  }
-}
+# In another terminal
+cd server
+npm install
+node server.js
 ```
 
-## Project Structure
+Then open [http://localhost:5173](http://localhost:5173)
 
-```
-web_app/
-├── public/              # Static assets
-├── server/              # Backend API server (under development)
-│   ├── data/            # Tool storage
-│   └── server.js        # Express server
-├── src/
-│   ├── components/      # React components
-│   │   ├── ui/          # UI components (Radix UI)
-│   │   └── layout/      # Layout components
-│   ├── pages/           # Page components
-│   ├── services/        # API services
-│   ├── store/           # Zustand state management
-│   └── lib/             # Utility functions
-└── package.json         # Project dependencies
+### Docker
+
+```bash
+docker-compose up -d
 ```
 
-## Future Enhancements
+---
 
-- User authentication and profiles
-- Sharing tools between users
-- Tool versioning and history
-- Integration with popular LLM platforms
-- Enhanced tool testing and validation features
-- More sophisticated parameter dependency options
-- Backend API implementation
+## 📚 Documentation
 
-## License
+- [Llero Handbook](./llero-handbook.md)
+- [Developer Roadmap](./09-roadmap-updated.md)
+- [Architecture Overview](./02-architecture-updated.md)
+- [API Reference](./03-api-reference-updated.md)
+- [Security Guide](./07-security-updated.md)
 
-MIT
+---
 
-/docs
-  ├── 01-charter.md
-  ├── 02-architecture.md
-  ├── 03-api-reference.md
-  ├── 04-data-model.md
-  ├── 05-contributing.md
-  ├── 06-dev-setup.md
-  ├── 07-testing.md
-  ├── 08-security.md
-  ├── 09-deployment.md
-  ├── 10-roadmap.md
-  ├── 11-user-guide.md
-  ├── 12-admin-guide.md
-  └── 13-faq.md
+## 🛡 License
+
+This code is **source-available** under a custom Business Source License variant.
+
+- ✅ Free for personal and educational use
+- ❌ Commercial use **requires a paid license**
+- 📄 [See full license terms → LICENSE.md](./LICENSE.md)
+
+Contact us to license Llero for use in your company, product, or organization.
+
+📩 `llero-license@yourdomain.com`
+
+---
+
+## 📦 Monorepo Structure
+
+```
+llero/
+├── forge/              # Visual tool builder (MIT-licensed core)
+├── commander-lite/     # Minimal interface to test tools
+├── server/             # API and backend
+├── docs/               # Markdown documentation
+├── docker-compose.yml
+└── LICENSE.md
+```
+
+---
+
+## 💡 Vision
+
+Llero helps you build **superhuman AI agents** by letting you define tools they can call, visualize their logic, and scale their coordination—all from a simple, modular platform.
+
+Whether you're coding solo or building a SaaS, Llero gives you the tools to control your AI.
+
+> Build. Test. Orchestrate. Be the hero.
+
+---
+
+## 🙌 Contribute
+
+Contributions to **Forge** and **Commander Lite** are welcome!
+
+- Fork the repo
+- Submit PRs to `dev` branch
+- Check the roadmap and issues for current tasks
+
+---
+
+## 📬 Contact
+
+Questions or licensing inquiries?
+
+- GitHub Issues
+- Email: `llero-license@yourdomain.com`
