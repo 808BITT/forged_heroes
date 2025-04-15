@@ -1,67 +1,50 @@
-# Forged Heroes
+# Forge: LLM Tool Specification Builder
 
-This repository contains two versions of the Forged Heroes tool framework:
+![Forge Logo](public/forge-logo.svg)
 
-1. **CLI Version**: A Python-based tool framework with a text user interface (TUI) for interactive tool management and execution.
-2. **Web Application Version**: A modern web application for creating, managing, and sharing tool specifications for Large Language Models (LLMs).
+Forge is a modern web application for creating, managing, and sharing tool specifications for Large Language Models (LLMs). It provides an intuitive interface for building function calling specifications that can be used with LLMs like GPT-4 to give them access to external tools and APIs.
 
-## Overview
+## Purpose
 
-### CLI Version
+Equip your "LLM Heroes" with powerful tools! Forge makes it easy to define structured JSON tool specifications that can be copy-pasted into LLM prompts, enabling models to request specific actions through function calling.
 
-The CLI version is located in the `cli/` directory. It provides a TUI for defining, managing, and executing tools with standardized parameter schemas. This version is ideal for users who prefer a terminal-based interface.
+## Features
 
-For more details, refer to the [CLI README](./cli/README.md).
-
-### Web Application Version
-
-The web application version is located in the `web_app/` directory. It offers a graphical interface for creating and managing tool specifications, with features like JSON generation and parameter validation.
-
-#### Key Features
-
-- **Tool Management**: Create, edit, and delete tool specifications
-- **Parameter Validation**: Define and validate parameters with different types
-- **JSON Generation**: Export tool specifications as JSON
+- **Visual Tool Editor**: Create and edit tool specifications with an intuitive UI
+- **Parameter Management**: Define tool parameters with type validation and descriptions
+- **JSON Generation**: Automatically convert your tool definitions to proper JSON format
+- **Tool Organization**: Categorize tools and search through your collection
 - **The Armory**: Interactive visualization of tool schemas with fluid animations and category-based exploration
+- **API Backend**: Store tools persistently on a server for sharing and reuse
+- **Responsive Design**: Works on desktop and mobile devices
+- **Tool Testing**: Test your tool specifications against a mock LLM to ensure they function as expected
+- **Parameter Dependencies**: Define dependencies between parameters, so that the visibility and requirements of one parameter can depend on the value of another.
+- **Enhanced Tool Editor**: Support for advanced parameter types and dependencies.
+- **New Armory Page**: Interactive visualization of tool schemas.
+- **Improved Tool Management and Testing Features**: Enhanced tool management and testing features.
 
-For more details, refer to the [Web App README](./web_app/README.md).
+## Technology Stack
+
+- **Frontend**: React, TypeScript, Vite, Tailwind CSS, Zustand, Radix UI
+- **Backend**: Node.js, Express (under development)
+- **Styling**: TailwindCSS with Radix UI components
+- **State Management**: Zustand
+- **Animation**: Framer Motion
+- **Routing**: React Router
 
 ## Getting Started
 
 ### Prerequisites
 
-- For the CLI version: Python 3.10 or higher
-- For the Web App version: Node.js v18+ and npm
+- Node.js v18+ and npm
 
 ### Installation
 
-#### CLI Version
-
-1. Navigate to the `cli/` directory:
+1. Clone the repository:
 
    ```bash
-   cd cli
-   ```
-
-2. Set up a virtual environment (optional but recommended):
-
-   ```bash
-   python -m venv .venv
-   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-   ```
-
-3. Install dependencies:
-
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-#### Web Application Version
-
-1. Navigate to the `web_app/` directory:
-
-   ```bash
-   cd web_app
+   git clone https://github.com/yourusername/forge.git
+   cd forge/web_app
    ```
 
 2. Install frontend dependencies:
@@ -70,37 +53,11 @@ For more details, refer to the [Web App README](./web_app/README.md).
    npm install
    ```
 
-3. Install backend dependencies:
+### Running the Application
+
+1. Start the frontend development server:
 
    ```bash
-   cd server
-   npm install
-   cd ..
-   ```
-
-### Running the Applications
-
-#### CLI Version
-
-Run the main application:
-
-```bash
-python main.py
-```
-
-#### Web Application Version
-
-1. Start the backend server:
-
-   ```bash
-   cd web_app/server
-   node server.js
-   ```
-
-2. In a new terminal, start the frontend development server:
-
-   ```bash
-   cd web_app
    npm run dev
    ```
 
@@ -110,36 +67,107 @@ python main.py
    http://localhost:5173
    ```
 
-## New Features in v0.0.2
+## Usage Guide
 
-### CLI Version
+### Creating a Tool
 
-#### Enhanced Parameter Management
+1. Navigate to the "Tools" page and click "New Tool"
+2. Fill in the tool name and description
+3. Add parameters by clicking "Add Parameter"
+4. For each parameter, specify:
+   - Name
+   - Type (string, number, boolean, object, array)
+   - Description
+   - Whether it's required
+   - Define dependencies on other parameters, if needed
+5. Click "Save" to store your tool
+6. Use the "Copy" button to copy the JSON specification for use with an LLM
+7. Use the "Test" button to test your tool against a mock LLM
 
-The `cli_tui/tool_editor.go` file now includes enhanced parameter management features, such as support for parameter dependencies, array item configuration, and object properties.
+### Using the Armory
 
-#### Improved Tool List and Editor Views
+The Armory provides an interactive, visually engaging way to explore your tool collection:
 
-The `cli_tui/main.go` and `cli_tui/tool_list.go` files have been updated to provide better handling of tool saving, editing, and parameter management.
+1. Access the Armory by clicking "Armory" in the navigation bar or "Enter the Armory" on the Tools page
+2. Browse tools by category in the three-panel interface:
+   - Left panel: Select a tool category
+   - Middle panel: Choose a specific tool from the selected category
+   - Right panel: View detailed parameter information for the selected tool
+3. Enjoy the fluid animations and interactive elements:
+   - Green indicators highlight required parameters
+   - Gray indicators show optional parameters
+   - Hover effects provide additional context and visual feedback
 
-#### Additional Metadata and Validation for Parameters
+### Example Tool JSON
 
-The `cli_tui/models.go` file has been updated to include additional metadata and validation for parameters.
+```json
+{
+  "type": "function",
+  "function": {
+    "name": "get_weather",
+    "description": "Get current weather for a specified location",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "location": {
+          "type": "string",
+          "description": "City name or address"
+        },
+        "units": {
+          "type": "string",
+          "description": "Temperature units (celsius or fahrenheit)"
+        }
+      },
+      "required": ["location"]
+    }
+  }
+}
+```
 
-### Web Application Version
+## Project Structure
 
-#### New API Endpoints
+```
+web_app/
+├── public/              # Static assets
+├── server/              # Backend API server (under development)
+│   ├── data/            # Tool storage
+│   └── server.js        # Express server
+├── src/
+│   ├── components/      # React components
+│   │   ├── ui/          # UI components (Radix UI)
+│   │   └── layout/      # Layout components
+│   ├── pages/           # Page components
+│   ├── services/        # API services
+│   ├── store/           # Zustand state management
+│   └── lib/             # Utility functions
+└── package.json         # Project dependencies
+```
 
-The `web_app/server/server.js` file now includes new API endpoints for parsing function signatures and generating descriptions.
+## Future Enhancements
 
-#### Enhanced Tool Editor
+- User authentication and profiles
+- Sharing tools between users
+- Tool versioning and history
+- Integration with popular LLM platforms
+- Enhanced tool testing and validation features
+- More sophisticated parameter dependency options
+- Backend API implementation
 
-The `web_app/src/components/ToolEditor.tsx` file has been updated to support advanced parameter types and dependencies.
+## License
 
-#### New Armory Page
+MIT
 
-The `web_app/src/pages/ArmoryPage.tsx` file introduces a new Armory page for interactive visualization of tool schemas.
-
-#### Improved Tool Management and Testing Features
-
-The `web_app/src/services/apiService.ts` and `web_app/src/services/toolSpecService.ts` files have been updated to provide improved tool management and testing features.
+/docs
+  ├── 01-charter.md
+  ├── 02-architecture.md
+  ├── 03-api-reference.md
+  ├── 04-data-model.md
+  ├── 05-contributing.md
+  ├── 06-dev-setup.md
+  ├── 07-testing.md
+  ├── 08-security.md
+  ├── 09-deployment.md
+  ├── 10-roadmap.md
+  ├── 11-user-guide.md
+  ├── 12-admin-guide.md
+  └── 13-faq.md
