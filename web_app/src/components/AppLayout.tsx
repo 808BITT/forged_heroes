@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, Suspense, lazy } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '../lib/utils';
 import { Button } from './ui/button';
-import { Sheet, SheetContent, SheetTrigger } from './ui/sheet';
+import { Sheet, SheetTrigger } from './ui/sheet';
 import { Switch } from './ui/switch';
 import { useTheme } from './ui/theme-provider';
 
@@ -16,6 +16,8 @@ import {
     Wrench
 } from 'lucide-react';
 
+const LazySheetContent = lazy(() => import('./ui/sheet').then(module => ({ default: module.SheetContent })));
+
 export default function AppLayout() {
     const { theme, setTheme } = useTheme();
     const navigate = useNavigate();
@@ -23,28 +25,30 @@ export default function AppLayout() {
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+    // Debounced resize handler
     useEffect(() => {
         const handleResize = () => {
             setIsMobile(window.innerWidth < 768);
         };
+        const debouncedResize = debounce(handleResize, 200);
 
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
+        window.addEventListener('resize', debouncedResize);
+        return () => window.removeEventListener('resize', debouncedResize);
     }, []);
 
-    const toggleTheme = () => {
+    const toggleTheme = useCallback(() => {
         setTheme(theme === 'light' ? 'dark' : 'light');
-    };
+    }, [theme, setTheme]);
 
-    const navigateTo = (path: string) => {
+    const navigateTo = useCallback((path: string) => {
         navigate(path);
         setMobileMenuOpen(false);
-    };
+    }, [navigate]);
 
     const navItems = [
-        { name: 'Dashboard', path: '/', icon: <Home className="h-5 w-5" /> },
-        { name: 'Tool List', path: '/tools', icon: <Wrench className="h-5 w-5" /> },
-        { name: 'New Tool', path: '/tools/new', icon: <Plus className="h-5 w-5" /> },
+        { name: 'Dashboard', path: '/', icon: <Home className="h-5 w-5" aria-hidden="true" /> },
+        { name: 'Tool List', path: '/tools', icon: <Wrench className="h-5 w-5" aria-hidden="true" /> },
+        { name: 'New Tool', path: '/tools/new', icon: <Plus className="h-5 w-5" aria-hidden="true" /> },
     ];
 
     const sidebarContent = (
@@ -57,7 +61,7 @@ export default function AppLayout() {
                 />
             </div>
 
-            <nav className="flex-1">
+            <nav className="flex-1" aria-label="Main Navigation">
                 <ul className="space-y-1.5 p-4">
                     {navItems.map((item) => (
                         <li key={item.path}>
@@ -68,6 +72,7 @@ export default function AppLayout() {
                                     location.pathname === item.path && "bg-accent font-medium"
                                 )}
                                 onClick={() => navigateTo(item.path)}
+                                aria-current={location.pathname === item.path ? "page" : undefined}
                             >
                                 {item.icon}
                                 {item.name}
@@ -85,15 +90,17 @@ export default function AppLayout() {
                             checked={theme === 'dark'}
                             onCheckedChange={toggleTheme}
                             className="data-[state=checked]:bg-purple-600"
+                            aria-label="Toggle Theme"
                         />
                         <label htmlFor="theme-mode" className="text-sm font-medium">
                             {theme === 'dark' ? 'Dark Mode' : 'Light Mode'}
                         </label>
                     </div>
-                    {theme === 'dark' ?
-                        <Moon className="h-4 w-4 text-purple-400" /> :
-                        <Sun className="h-4 w-4 text-amber-500" />
-                    }
+                    {theme === 'dark' ? (
+                        <Moon className="h-4 w-4 text-purple-400" aria-hidden="true" />
+                    ) : (
+                        <Sun className="h-4 w-4 text-amber-500" aria-hidden="true" />
+                    )}
                 </div>
             </div>
         </div>
@@ -115,11 +122,13 @@ export default function AppLayout() {
 
             {/* Mobile Sidebar */}
             {isMobile && (
-                <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-                    <SheetContent side="left" className="p-0 w-72" showCloseButton={false}>
-                        {sidebarContent}
-                    </SheetContent>
-                </Sheet>
+                <Suspense fallback={<div>Loading...</div>}>
+                    <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+                        <LazySheetContent side="left" className="p-0 w-72 transition-transform duration-300 ease-in-out" showCloseButton={false}>
+                            {sidebarContent}
+                        </LazySheetContent>
+                    </Sheet>
+                </Suspense>
             )}
 
             {/* Main Content */}
@@ -129,7 +138,7 @@ export default function AppLayout() {
                     {isMobile && (
                         <SheetTrigger asChild onClick={() => setMobileMenuOpen(true)}>
                             <Button variant="ghost" size="icon" className="mr-4">
-                                <Menu className="h-5 w-5" />
+                                <Menu className="h-5 w-5" aria-hidden="true" />
                                 <span className="sr-only">Toggle menu</span>
                             </Button>
                         </SheetTrigger>
@@ -139,12 +148,14 @@ export default function AppLayout() {
                             variant="ghost"
                             size="icon"
                             onClick={toggleTheme}
-                            className="hidden sm:flex hover:bg-accent/50 transition-colors"
+                            className={cn("hidden sm:flex hover:bg-accent/50 transition-colors", isMobile && "pointer-events-none")}
+                            aria-label="Toggle Theme"
                         >
-                            {theme === 'dark' ?
-                                <Sun className="h-5 w-5 text-amber-500" /> :
-                                <Moon className="h-5 w-5 text-purple-400" />
-                            }
+                            {theme === 'dark' ? (
+                                <Sun className="h-5 w-5 text-amber-500" aria-hidden="true" />
+                            ) : (
+                                <Moon className="h-5 w-5 text-purple-400" aria-hidden="true" />
+                            )}
                         </Button>
                     </div>
                 </header>
@@ -158,4 +169,13 @@ export default function AppLayout() {
             </div>
         </div>
     );
+}
+
+// Utility function for debouncing
+function debounce<T extends (...args: any[]) => void>(func: T, wait: number): (...args: Parameters<T>) => void {
+    let timeout: ReturnType<typeof setTimeout> | null = null;
+    return (...args: Parameters<T>) => {
+        if (timeout) clearTimeout(timeout);
+        timeout = setTimeout(() => func(...args), wait);
+    };
 }

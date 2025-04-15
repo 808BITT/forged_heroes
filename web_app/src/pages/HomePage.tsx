@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { ArrowRight, Code, Database, Wrench } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { GlowButton, GlowCard } from '../components/ui/glow-effect';
@@ -36,23 +36,37 @@ export default function HomePage(): JSX.Element {
           Create, manage, and share powerful tools for Large Language Models to accomplish tasks more effectively.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <GlowButton 
-            size="lg" 
-            glowColor="rgba(26, 188, 156, 0.6)" 
-            glowSize={200}
-            glowIntensity={0.6}
+          <Link 
+            to="/tools" 
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            className="w-full sm:w-auto"
           >
-            <Link to="/tools">Explore Tools</Link>
-          </GlowButton>
-          <GlowButton 
-            size="lg" 
-            variant="outline"  
-            glowColor="rgba(102, 204, 255, 0.5)"
-            glowSize={200}
-            glowIntensity={0.5}
+            <GlowButton 
+              size="lg" 
+              glowColor="rgba(26, 188, 156, 0.6)" 
+              glowSize={200}
+              glowIntensity={0.6}
+              className="w-full"
+            >
+              Explore Tools
+            </GlowButton>
+          </Link>
+          <Link 
+            to="/tools/new" 
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            className="w-full sm:w-auto"
           >
-            <Link to="/tools/new">Create New Tool</Link>
-          </GlowButton>
+            <GlowButton 
+              size="lg" 
+              variant="outline"  
+              glowColor="rgba(102, 204, 255, 0.5)"
+              glowSize={200}
+              glowIntensity={0.5}
+              className="w-full"
+            >
+              Create New Tool
+            </GlowButton>
+          </Link>
         </div>
       </motion.section>
 
@@ -120,13 +134,17 @@ export default function HomePage(): JSX.Element {
         </p>
         <GlowButton 
           size="lg" 
-          className="gap-2" 
+          className="gap-2 w-full sm:w-auto" 
           glowColor="rgba(26, 188, 156, 0.7)"
           glowSize={220}
           glowIntensity={0.7}
           pulseOutline={true}
         >
-          <Link to="/tools/new" className="flex items-center">
+          <Link 
+            to="/tools/new" 
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            className="flex items-center w-full"
+          >
             Create Your First Tool
             <ArrowRight className="ml-2 h-4 w-4" />
           </Link>

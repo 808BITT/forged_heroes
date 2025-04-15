@@ -16,7 +16,7 @@ export default function ToolsPage() {
             <p className="text-muted-foreground">Equip your LLM Heroes with powerful tools</p>
           </div>
           <div className="flex gap-4">
-            <Link to="/tools/new">
+            <Link to="/tools/new" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
               <GlowButton 
                 variant="default" 
                 className="gap-2" 

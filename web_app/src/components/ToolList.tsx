@@ -180,8 +180,8 @@ export default function ToolList({ hideHeader = false, searchTerm: externalSearc
                 <div className="flex flex-col gap-4">
                     <div className="flex items-center justify-between">
                         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Tools</h1>
-                        <Link to="/tools/new">
-                            <Button className="gap-2 relative overflow-hidden group">
+                        <Link to="/tools/new" className="relative overflow-hidden group" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+                            <Button className="gap-2 w-full h-full">
                                 <Plus className="h-4 w-4" />
                                 <span>New Tool</span>
                                 <motion.div 
@@ -221,8 +221,10 @@ export default function ToolList({ hideHeader = false, searchTerm: externalSearc
                     </div>
                     {selectedCategory && (
                         <motion.div 
+                            key="category-filter"
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.9 }}
                             className="flex items-center gap-2 px-3 py-2 bg-primary/10 rounded-md text-sm"
                         >
                             <Filter className="h-4 w-4" />
