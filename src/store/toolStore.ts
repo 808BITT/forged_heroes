@@ -1,6 +1,12 @@
 import { create } from 'zustand';
 import toolsApi from '../services/apiService';
 
+// Define or import the Category type
+export interface Category {
+    id: string;
+    name: string;
+}
+
 // Type definitions
 export interface Parameter {
     id: string;
@@ -182,4 +188,70 @@ export const useToolStore = create<ToolState>()((set, get) => ({
             }).length
         };
     }
+}));
+
+export const useToolEditorStore = create<{
+    name: string;
+    description: string;
+    category: string;
+    parameters: Parameter[];
+    categories: Category[];
+    highlightedFields: Record<string, boolean>;
+    errors: string[];
+    jsonPreview: string;
+    copied: boolean;
+    isLoadingCategories: boolean;
+    categoryError: string;
+    categoryModalOpen: boolean;
+    newCategoryName: string;
+    isSavingCategory: boolean;
+    newCategoryError: string;
+
+    setName: (name: string) => void;
+    setDescription: (description: string) => void;
+    setCategory: (category: string) => void;
+    setParameters: (parameters: Parameter[]) => void;
+    setCategories: (categories: Category[]) => void;
+    setHighlightedFields: (fields: Record<string, boolean>) => void;
+    setErrors: (errors: string[]) => void;
+    setJsonPreview: (preview: string) => void;
+    setCopied: (copied: boolean) => void;
+    setIsLoadingCategories: (isLoading: boolean) => void;
+    setCategoryError: (error: string) => void;
+    setCategoryModalOpen: (isOpen: boolean) => void;
+    setNewCategoryName: (name: string) => void;
+    setIsSavingCategory: (isSaving: boolean) => void;
+    setNewCategoryError: (error: string) => void;
+}>(set => ({
+    name: "",
+    description: "",
+    category: "General",
+    parameters: [],
+    categories: [],
+    highlightedFields: {},
+    errors: [],
+    jsonPreview: "",
+    copied: false,
+    isLoadingCategories: false,
+    categoryError: "",
+    categoryModalOpen: false,
+    newCategoryName: "",
+    isSavingCategory: false,
+    newCategoryError: "",
+
+    setName: (name: string) => set({ name }),
+    setDescription: (description: string) => set({ description }),
+    setCategory: (category: string) => set({ category }),
+    setParameters: (parameters: Parameter[]) => set({ parameters }),
+    setCategories: (categories: Category[]) => set({ categories }),
+    setHighlightedFields: (fields: Record<string, boolean>) => set({ highlightedFields: fields }),
+    setErrors: (errors: string[]) => set({ errors }),
+    setJsonPreview: (preview: string) => set({ jsonPreview: preview }),
+    setCopied: (copied: boolean) => set({ copied }),
+    setIsLoadingCategories: (isLoading: boolean) => set({ isLoadingCategories: isLoading }),
+    setCategoryError: (error: string) => set({ categoryError: error }),
+    setCategoryModalOpen: (isOpen: boolean) => set({ categoryModalOpen: isOpen }),
+    setNewCategoryName: (name: string) => set({ newCategoryName: name }),
+    setIsSavingCategory: (isSaving: boolean) => set({ isSavingCategory: isSaving }),
+    setNewCategoryError: (error: string) => set({ newCategoryError: error }),
 }));

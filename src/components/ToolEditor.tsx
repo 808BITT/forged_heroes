@@ -1,10 +1,11 @@
 import { motion } from "framer-motion";
 import { ArrowLeft, Plus, PlusCircle, Save, Trash } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { convertDefaultValue } from "../lib/utils";
-import toolsApi, { Category } from "../services/apiService";
-import { Parameter, useToolStore } from "../store/toolStore";
+import toolsApi from "../services/apiService";
+import { useToolEditorStore, Parameter, Category } from "../store/toolStore";
+import { useToolStore } from "../store/toolStore";
 import ArrayItemConfig from "./ArrayItemConfig";
 import JsonPreview from "./JsonPreview";
 import ParameterEditor from "./ParameterEditor";
@@ -13,7 +14,6 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label.tsx";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Textarea } from "./ui/textarea.tsx";
-// Modal components for the category dialog
 import {
     handleAddParameter,
     handleRemoveParameter,
@@ -36,39 +36,44 @@ import { useToast } from "./ui/use-toast";
 export default function ToolEditor() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const addTool = useToolStore((state) => state.addTool);
-    const updateTool = useToolStore((state) => state.updateTool);
-    const deleteTool = useToolStore((state) => state.deleteTool);
-    const { addToast, toasts } = useToast();
-    
-    // Form state
-    const [name, setName] = useState("");
-    const [description, setDescription] = useState("");
-    const [category, setCategory] = useState("General");
-    const [parameters, setParameters] = useState<Parameter[]>([]);
-    const [jsonPreview, setJsonPreview] = useState("");
-    const [copied, setCopied] = useState(false);
-    const [highlightedFields, setHighlightedFields] = useState<string[]>([]);
-    const [errors, setErrors] = useState<string[]>([]);
-    
-    // New state for categories
-    const [categories, setCategories] = useState<Category[]>([]);
-    const [isLoadingCategories, setIsLoadingCategories] = useState(false);
-    const [categoryError, setCategoryError] = useState("");
-    
-    // New state for the category modal
-    const [categoryModalOpen, setCategoryModalOpen] = useState(false);
-    const [newCategoryName, setNewCategoryName] = useState("");
-    const [isSavingCategory, setIsSavingCategory] = useState(false);
-    const [newCategoryError, setNewCategoryError] = useState("");
-    
-    // Panel toggle state to manage complexity
-    const [openPanels, setOpenPanels] = useState<Record<string, boolean>>({});
+    const { addTool, updateTool, deleteTool } = useToolStore();
+    const { addToast } = useToast();
 
-    // Consolidated initialization logic
+    const {
+        name,
+        description,
+        category,
+        parameters,
+        categories,
+        highlightedFields,
+        errors,
+        jsonPreview,
+        copied,
+        isLoadingCategories,
+        categoryError,
+        categoryModalOpen,
+        newCategoryName,
+        isSavingCategory,
+        newCategoryError,
+        setName,
+        setDescription,
+        setCategory,
+        setParameters,
+        setCategories,
+        setHighlightedFields,
+        setErrors,
+        setJsonPreview,
+        setCopied,
+        setIsLoadingCategories,
+        setCategoryError,
+        setCategoryModalOpen,
+        setNewCategoryName,
+        setIsSavingCategory,
+        setNewCategoryError,
+    } = useToolEditorStore();
+
     useEffect(() => {
         async function initialize() {
-        // Fetch categories
             try {
                 setIsLoadingCategories(true);
                 setCategoryError("");
@@ -87,17 +92,15 @@ export default function ToolEditor() {
                 setIsLoadingCategories(false);
             }
 
-            // Fetch tool data if editing
             if (id) {
                 try {
                     const response = await toolsApi.getById(id);
                     setName(response.name);
                     setDescription(response.description);
                     setCategory(response.category);
-                    // Ensure parameters are an array
                     const parsedParameters = Array.isArray(response.parameters)
                         ? response.parameters
-                        : []; // Default to an empty array if not valid
+                        : [];
                     setParameters(parsedParameters);
                 } catch (error) {
                     console.error("Error fetching tool:", error);
@@ -110,16 +113,13 @@ export default function ToolEditor() {
         initialize();
     }, [id]);
 
-    // Handle adding a new category
-    const handleAddCategory = async () => {
-        // Validate input
+    const handleAddCategory = async (): Promise<void> => {
         if (!newCategoryName.trim()) {
             setNewCategoryError("Category name is required");
             return;
         }
 
-        // Check if category already exists (case insensitive)
-        if (categories.some(cat => cat.name.toLowerCase() === newCategoryName.trim().toLowerCase())) {
+        if (categories.some((cat: Category) => cat.name.toLowerCase() === newCategoryName.trim().toLowerCase())) {
             setNewCategoryError("Category already exists");
             return;
         }
@@ -127,21 +127,11 @@ export default function ToolEditor() {
         try {
             setIsSavingCategory(true);
             setNewCategoryError("");
-            
-            // Call API to create new category
-            const newCategory = await toolsApi.createCategory(newCategoryName.trim());
-            
-            // Update categories list
-            setCategories(prev => [...prev, newCategory]);
-            
-            // Select the new category
+            const newCategory: Category = await toolsApi.createCategory(newCategoryName.trim());
+            setCategories([...categories, newCategory]);
             setCategory(newCategory.name);
-            
-            // Close modal and reset
             setCategoryModalOpen(false);
             setNewCategoryName("");
-            
-            // Show success message
             addToast({
                 title: "Category added",
                 description: `"${newCategory.name}" has been added to categories`,
@@ -154,18 +144,16 @@ export default function ToolEditor() {
         }
     };
 
-    // Toggle panel open/closed state
-    const togglePanel = (panelId: string) => {
-        setOpenPanels(prev => ({
-            ...prev,
-            [panelId]: !prev[panelId]
-        }));
+    const togglePanel = (panelId: string): void => {
+        setHighlightedFields({
+            ...highlightedFields,
+            [panelId]: !highlightedFields[panelId],
+        });
     };
 
-    // Generate and update JSON preview
     useEffect(() => {
         if (!name) return;
-        
+
         const toolSpec = {
             type: "function",
             function: {
@@ -173,52 +161,44 @@ export default function ToolEditor() {
                 description: description,
                 parameters: {
                     type: "object",
-                    properties: parameters.reduce((acc: Record<string, any>, param) => {
+                    properties: parameters.reduce((acc: Record<string, any>, param: Parameter) => {
                         if (param.name) {
-                            // Base property definition
                             const paramSpec: any = {
                                 type: param.type === 'integer' ? 'integer' : param.type,
-                                description: param.description
+                                description: param.description,
                             };
-                            
-                            // Add format if specified
+
                             if (param.format && (param.type === 'string' || param.type === 'number' || param.type === 'integer')) {
                                 paramSpec.format = param.format;
                             }
-                            
-                            // Add enum values if type is enum
+
                             if (param.type === 'enum' && param.enumValues && param.enumValues.length > 0) {
                                 paramSpec.type = 'string';
                                 paramSpec.enum = param.enumValues;
                             }
-                            
-                            // Add min/max for numbers/integers
+
                             if ((param.type === 'number' || param.type === 'integer') && param.minimum !== '') {
                                 paramSpec.minimum = Number(param.minimum);
                             }
                             if ((param.type === 'number' || param.type === 'integer') && param.maximum !== '') {
                                 paramSpec.maximum = Number(param.maximum);
                             }
-                            
-                            // Add default value if provided with proper type conversion
+
                             if (param.default !== '') {
                                 paramSpec.default = convertDefaultValue(param.type, param.default || '');
                             }
-                            
-                            // Handle array items
+
                             if (param.type === 'array') {
                                 paramSpec.items = {
                                     type: param.arrayItemType || 'string',
-                                    description: param.arrayItemDescription || ''
+                                    description: param.arrayItemDescription || '',
                                 };
-                                
-                                // If array items are objects, add their properties
+
                                 if (param.arrayItemType === 'object' && param.objectProperties) {
                                     paramSpec.items.properties = param.objectProperties;
                                 }
                             }
-                            
-                            // Handle object properties
+
                             if (param.type === 'object' && param.objectProperties) {
                                 paramSpec.properties = param.objectProperties;
                             }
@@ -228,71 +208,66 @@ export default function ToolEditor() {
                         return acc;
                     }, {} as Record<string, any>),
                     required: parameters
-                        .filter(param => param.required && param.name)
-                        .map(param => param.name)
-                }
-            }
+                        .filter((param: Parameter) => param.required && param.name)
+                        .map((param: Parameter) => param.name),
+                },
+            },
         };
-        
-        // Add dependency conditions to the spec if they exist
-        const paramDependencies = parameters.filter(p => p.dependencies && p.name);
+
+        const paramDependencies = parameters.filter((p: Parameter) => p.dependencies && p.name);
         if (paramDependencies.length > 0) {
-            // Use a properly typed object to avoid direct property access issues
             const paramsObj = toolSpec.function.parameters as any;
             if (!paramsObj.dependencyMap) {
                 paramsObj.dependencyMap = {};
             }
-            
-            paramDependencies.forEach(param => {
+
+            paramDependencies.forEach((param: Parameter) => {
                 if (!param.dependencies || !param.name) return;
-                
+
                 paramsObj.dependencyMap[param.name] = {
-                    conditions: param.dependencies.conditions.map(c => {
-                        // Find the parameter this condition depends on
-                        const sourceParam = parameters.find(p => p.id === c.paramId);
+                    conditions: param.dependencies.conditions.map((c: any) => {
+                        const sourceParam = parameters.find((p: Parameter) => p.id === c.paramId);
                         if (!sourceParam || !sourceParam.name) return null;
-                        
+
                         return {
                             sourceParam: sourceParam.name,
                             operator: c.operator,
-                            value: c.value
+                            value: c.value,
                         };
                     }).filter(Boolean),
-                    effect: param.dependencies.effect
+                    effect: param.dependencies.effect,
                 };
             });
         }
-        
+
         setJsonPreview(JSON.stringify(toolSpec, null, 2));
     }, [name, description, parameters]);
 
-    const validateForm = () => {
+    const validateForm = (): boolean => {
         const newErrors: string[] = [];
         if (!name.trim()) newErrors.push("Tool name is required");
         if (!description.trim()) newErrors.push("Tool description is required");
-        
-        parameters.forEach((param, _index) => {
+
+        parameters.forEach((param: Parameter, _index: number) => {
             const paramDisplay = `Parameter ${_index + 1}${param.name ? ` (${param.name})` : ''}`;
-            
-            // Basic validation
+
             if (!param.name.trim()) newErrors.push(`${paramDisplay} name is required`);
             if (!param.type.trim()) newErrors.push(`${paramDisplay} type is required`);
             if (!param.description.trim()) newErrors.push(`${paramDisplay} description is required`);
-            
-            // Type-specific validation
+
             switch (param.type) {
                 case 'enum':
                     if (!param.enumValues || param.enumValues.length === 0) {
                         newErrors.push(`${paramDisplay} must have at least one enum value`);
                     }
                     break;
-                    
+
                 case 'array':
                     if (!param.arrayItemType) {
                         newErrors.push(`${paramDisplay} must specify array item type`);
                     }
                     break;
-                    
+
                 case 'object':
                     try {
                         if (!param.objectProperties || Object.keys(param.objectProperties).length === 0) {
@@ -302,34 +277,32 @@ export default function ToolEditor() {
                         newErrors.push(`${paramDisplay} has invalid object properties format`);
                     }
                     break;
-                    
+
                 case 'number':
                 case 'integer':
-                    if (param.minimum !== '' && param.maximum !== '' && 
+                    if (param.minimum !== '' && param.maximum !== '' &&
                         Number(param.minimum) > Number(param.maximum)) {
                         newErrors.push(`${paramDisplay} minimum value cannot be greater than maximum`);
                     }
-                    
+
                     if (param.default !== '') {
                         const defaultNum = Number(param.default);
                         if (isNaN(defaultNum)) {
                             newErrors.push(`${paramDisplay} default value must be a valid ${param.type}`);
                         } else {
-                            // Check if default is within min/max range if specified
                             if (param.minimum !== '' && defaultNum < Number(param.minimum)) {
                                 newErrors.push(`${paramDisplay} default value cannot be less than minimum`);
                             }
                             if (param.maximum !== '' && defaultNum > Number(param.maximum)) {
                                 newErrors.push(`${paramDisplay} default value cannot be greater than maximum`);
                             }
-                            // For integer type, ensure the default is an integer
                             if (param.type === 'integer' && !Number.isInteger(defaultNum)) {
                                 newErrors.push(`${paramDisplay} default value must be an integer`);
                             }
                         }
                     }
                     break;
-                    
+
                 case 'boolean':
                     if (param.default !== '' && param.default !== 'true' && param.default !== 'false') {
                         newErrors.push(`${paramDisplay} default value must be either 'true' or 'false'`);
@@ -337,37 +310,35 @@ export default function ToolEditor() {
                     break;
             }
         });
-        
-        // Highlight UI elements with errors
-        const fieldsToHighlight = [];
-        if (!name.trim()) fieldsToHighlight.push("name");
-        if (!description.trim()) fieldsToHighlight.push("description");
-        parameters.forEach((param) => {
-            if (!param.name.trim()) fieldsToHighlight.push(`param-name-${param.id}`);
-            if (!param.type.trim()) fieldsToHighlight.push(`param-type-${param.id}`);
-            if (!param.description.trim()) fieldsToHighlight.push(`param-desc-${param.id}`);
-            
-            // Add fields with type-specific errors
+
+        const fieldsToHighlight: Record<string, boolean> = {};
+        if (!name.trim()) fieldsToHighlight["name"] = true;
+        if (!description.trim()) fieldsToHighlight["description"] = true;
+        parameters.forEach((param: Parameter) => {
+            if (!param.name.trim()) fieldsToHighlight[`param-name-${param.id}`] = true;
+            if (!param.type.trim()) fieldsToHighlight[`param-type-${param.id}`] = true;
+            if (!param.description.trim()) fieldsToHighlight[`param-desc-${param.id}`] = true;
+
             switch(param.type) {
                 case 'enum':
                     if (!param.enumValues || param.enumValues.length === 0) {
-                        fieldsToHighlight.push(`param-enum-${param.id}`);
+                        fieldsToHighlight[`param-enum-${param.id}`] = true;
                     }
                     break;
                 case 'object':
                     if (!param.objectProperties || Object.keys(param.objectProperties).length === 0) {
-                        fieldsToHighlight.push(`param-object-${param.id}`);
+                        fieldsToHighlight[`param-object-${param.id}`] = true;
                     }
                     break;
             }
         });
-        
+
         setHighlightedFields(fieldsToHighlight);
         setErrors(newErrors);
         return newErrors.length === 0;
     };
 
-    const handleSave = async () => {
+    const handleSave = async (): Promise<void> => {
         if (!validateForm()) return;
 
         const toolData = {
@@ -375,7 +346,7 @@ export default function ToolEditor() {
             description,
             inputSchema: {
                 type: "object",
-                properties: parameters.reduce((acc: Record<string, any>, param) => {
+                properties: parameters.reduce((acc: Record<string, any>, param: Parameter) => {
                     if (param.name) {
                         acc[param.name] = {
                             type: param.type,
@@ -418,7 +389,7 @@ export default function ToolEditor() {
                     },
                 },
             },
-            rawParameters: parameters.map((param) => ({
+            rawParameters: parameters.map((param: Parameter) => ({
                 id: param.id,
                 name: param.name,
                 type: param.type,
@@ -449,7 +420,6 @@ export default function ToolEditor() {
             }
 
             navigate("/tools");
-            console.log("Start Toast"); // Debugging log
             addToast({
                 title: "Success",
                 description: "Tool saved successfully!",
@@ -465,13 +435,13 @@ export default function ToolEditor() {
         }
     };
 
-    const handleDelete = () => {
+    const handleDelete = (): void => {
         if (id) {
             setCategoryModalOpen(true);
         }
     };
 
-    const confirmDelete = async () => {
+    const confirmDelete = async (): Promise<void> => {
         try {
             if (id) {
                 await deleteTool(id);
@@ -496,7 +466,7 @@ export default function ToolEditor() {
         }
     };
 
-    const copyJsonToClipboard = async () => {
+    const copyJsonToClipboard = async (): Promise<void> => {
         try {
             await navigator.clipboard.writeText(jsonPreview);
             setCopied(true);
@@ -506,8 +476,7 @@ export default function ToolEditor() {
         }
     };
 
-    // Render type-specific configuration fields
-    const renderTypeSpecificFields = (param: Parameter) => {
+    const renderTypeSpecificFields = (param: Parameter): JSX.Element | null => {
         switch (param.type) {
             case 'string':
                 return (
@@ -515,7 +484,7 @@ export default function ToolEditor() {
                         <Label htmlFor={`param-format-${param.id}`}>Format (Optional)</Label>
                         <Select
                             value={param.format || ""}
-                            onValueChange={(value) => handleUpdateParameter(param.id, 'format', value, parameters, setParameters)}
+                            onValueChange={(value: string) => handleUpdateParameter(param.id, 'format', value, parameters, setParameters)}
                         >
                             <SelectTrigger id={`param-format-${param.id}`}>
                                 <SelectValue placeholder="No format restriction" />
@@ -532,7 +501,7 @@ export default function ToolEditor() {
                         </Select>
                     </div>
                 );
-                
+
             case 'number':
             case 'integer':
                 return (
@@ -559,7 +528,7 @@ export default function ToolEditor() {
                         </div>
                     </div>
                 );
-                
+
             case 'enum':
                 return (
                     <div className="space-y-2">
@@ -575,7 +544,7 @@ export default function ToolEditor() {
                         </p>
                     </div>
                 );
-                
+
             case 'array':
                 return (
                     <ArrayItemConfig
@@ -587,7 +556,7 @@ export default function ToolEditor() {
                         }}
                     />
                 );
-                
+
             case 'object':
                 return (
                     <div className="space-y-2">
@@ -605,7 +574,7 @@ export default function ToolEditor() {
                         </p>
                     </div>
                 );
-                
+
             default:
                 return null;
         }
@@ -665,7 +634,6 @@ export default function ToolEditor() {
                 )}
 
                 <div className="grid gap-8 lg:grid-cols-2">
-                    {/* Tool Configuration Form */}
                     <motion.div
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
@@ -678,7 +646,7 @@ export default function ToolEditor() {
                                 placeholder="Enter tool name..."
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
-                                className={highlightedFields.includes("name") ? "border-red-500" : ""}
+                                className={highlightedFields["name"] ? "border-red-500" : ""}
                             />
                         </div>
 
@@ -689,7 +657,7 @@ export default function ToolEditor() {
                                 placeholder="Enter tool description..."
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
-                                className={highlightedFields.includes("description") ? "border-red-500" : ""}
+                                className={highlightedFields["description"] ? "border-red-500" : ""}
                             />
                         </div>
 
@@ -724,7 +692,7 @@ export default function ToolEditor() {
                                             No categories found
                                         </SelectItem>
                                     ) : (
-                                        categories.map(cat => (
+                                        categories.map((cat: Category) => (
                                             <SelectItem key={cat.id} value={cat.name}>
                                                 {cat.name}
                                             </SelectItem>
@@ -748,11 +716,10 @@ export default function ToolEditor() {
                                 </Button>
                             </div>
 
-                            {/* Parameter Editor */}
                             <ParameterEditor
                                 parameters={parameters}
-                                openPanels={openPanels}
-                                highlightedFields={highlightedFields}
+                                openPanels={highlightedFields}
+                                highlightedFields={Object.keys(highlightedFields).filter(key => highlightedFields[key])}
                                 onTogglePanel={togglePanel}
                                 onUpdateParameter={(id, field, value) => handleUpdateParameter(id, field, value, parameters, setParameters)}
                                 onUpdateParameterDependency={(id, dependencies) => handleUpdateParameterDependency(parameters, setParameters, id, dependencies)}
@@ -765,11 +732,9 @@ export default function ToolEditor() {
                         </div>
                     </motion.div>
 
-                    {/* JSON Preview */}
                     <JsonPreview jsonPreview={jsonPreview} onCopy={copyJsonToClipboard} copied={copied} />
                 </div>
 
-                {/* Add Category Modal */}
                 <Dialog open={categoryModalOpen} onOpenChange={setCategoryModalOpen}>
                     <DialogContent>
                         <DialogHeader>
@@ -816,7 +781,6 @@ export default function ToolEditor() {
                     </DialogContent>
                 </Dialog>
 
-                {/* Delete Confirmation Modal */}
                 <Dialog open={categoryModalOpen} onOpenChange={setCategoryModalOpen}>
                     <DialogContent>
                         <DialogHeader>
