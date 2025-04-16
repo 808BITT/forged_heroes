@@ -1,3 +1,5 @@
+import { vi } from 'vitest';
+
 // Mock import.meta.env for Jest
 Object.defineProperty(globalThis, 'import', {
   value: {
@@ -18,10 +20,10 @@ Object.defineProperty(globalThis, 'import', {
 });
 
 // Identity mock for JSON files
-jest.mock('*.json', () => ({}), { virtual: true });
+vi.mock('*.json', () => ({}), { virtual: true });
 
 // Make sure CI info is properly handled
-jest.mock('ci-info', () => ({
+vi.mock('ci-info', () => ({
   isCI: false,
   name: null,
   ENVS: [],
@@ -29,4 +31,4 @@ jest.mock('ci-info', () => ({
 }));
 
 // Suppress console errors during tests
-console.error = jest.fn();
+console.error = vi.fn();
