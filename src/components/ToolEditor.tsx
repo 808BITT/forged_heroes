@@ -32,6 +32,7 @@ import {
     DialogTitle,
 } from "./ui/dialog";
 import { useToast } from "./ui/use-toast";
+import { validateToolForm } from "../lib/validation";
 
 export default function ToolEditor() {
     const { id } = useParams<{ id: string }>();
@@ -244,98 +245,10 @@ export default function ToolEditor() {
     }, [name, description, parameters]);
 
     const validateForm = (): boolean => {
-        const newErrors: string[] = [];
-        if (!name.trim()) newErrors.push("Tool name is required");
-        if (!description.trim()) newErrors.push("Tool description is required");
-
-        parameters.forEach((param: Parameter, _index: number) => {
-            const paramDisplay = `Parameter ${_index + 1}${param.name ? ` (${param.name})` : ''}`;
-
-            if (!param.name.trim()) newErrors.push(`${paramDisplay} name is required`);
-            if (!param.type.trim()) newErrors.push(`${paramDisplay} type is required`);
-            if (!param.description.trim()) newErrors.push(`${paramDisplay} description is required`);
-
-            switch (param.type) {
-                case 'enum':
-                    if (!param.enumValues || param.enumValues.length === 0) {
-                        newErrors.push(`${paramDisplay} must have at least one enum value`);
-                    }
-                    break;
-
-                case 'array':
-                    if (!param.arrayItemType) {
-                        newErrors.push(`${paramDisplay} must specify array item type`);
-                    }
-                    break;
-
-                case 'object':
-                    try {
-                        if (!param.objectProperties || Object.keys(param.objectProperties).length === 0) {
-                            newErrors.push(`${paramDisplay} must have at least one property defined`);
-                        }
-                    } catch (error) {
-                        newErrors.push(`${paramDisplay} has invalid object properties format`);
-                    }
-                    break;
-
-                case 'number':
-                case 'integer':
-                    if (param.minimum !== '' && param.maximum !== '' &&
-                        Number(param.minimum) > Number(param.maximum)) {
-                        newErrors.push(`${paramDisplay} minimum value cannot be greater than maximum`);
-                    }
-
-                    if (param.default !== '') {
-                        const defaultNum = Number(param.default);
-                        if (isNaN(defaultNum)) {
-                            newErrors.push(`${paramDisplay} default value must be a valid ${param.type}`);
-                        } else {
-                            if (param.minimum !== '' && defaultNum < Number(param.minimum)) {
-                                newErrors.push(`${paramDisplay} default value cannot be less than minimum`);
-                            }
-                            if (param.maximum !== '' && defaultNum > Number(param.maximum)) {
-                                newErrors.push(`${paramDisplay} default value cannot be greater than maximum`);
-                            }
-                            if (param.type === 'integer' && !Number.isInteger(defaultNum)) {
-                                newErrors.push(`${paramDisplay} default value must be an integer`);
-                            }
-                        }
-                    }
-                    break;
-
-                case 'boolean':
-                    if (param.default !== '' && param.default !== 'true' && param.default !== 'false') {
-                        newErrors.push(`${paramDisplay} default value must be either 'true' or 'false'`);
-                    }
-                    break;
-            }
-        });
-
-        const fieldsToHighlight: Record<string, boolean> = {};
-        if (!name.trim()) fieldsToHighlight["name"] = true;
-        if (!description.trim()) fieldsToHighlight["description"] = true;
-        parameters.forEach((param: Parameter) => {
-            if (!param.name.trim()) fieldsToHighlight[`param-name-${param.id}`] = true;
-            if (!param.type.trim()) fieldsToHighlight[`param-type-${param.id}`] = true;
-            if (!param.description.trim()) fieldsToHighlight[`param-desc-${param.id}`] = true;
-
-            switch(param.type) {
-                case 'enum':
-                    if (!param.enumValues || param.enumValues.length === 0) {
-                        fieldsToHighlight[`param-enum-${param.id}`] = true;
-                    }
-                    break;
-                case 'object':
-                    if (!param.objectProperties || Object.keys(param.objectProperties).length === 0) {
-                        fieldsToHighlight[`param-object-${param.id}`] = true;
-                    }
-                    break;
-            }
-        });
-
+        const { errors, fieldsToHighlight } = validateToolForm(name, description, parameters);
         setHighlightedFields(fieldsToHighlight);
-        setErrors(newErrors);
-        return newErrors.length === 0;
+        setErrors(errors);
+        return errors.length === 0;
     };
 
     const handleSave = async (): Promise<void> => {
