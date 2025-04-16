@@ -1,7 +1,8 @@
-export default {
-  presets: [
-    ['@babel/preset-env', { targets: { node: 'current' } }],
-    '@babel/preset-typescript',
-    ['@babel/preset-react', { runtime: 'automatic' }]
-  ],
-};
+// Convert to CommonJS format to avoid 'module is not defined' error
+export const presets = [
+  ['@babel/preset-env', {
+    targets: {
+      node: 'current',
+    },
+  }],
+];

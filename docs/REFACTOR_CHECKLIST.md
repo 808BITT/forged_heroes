@@ -5,8 +5,8 @@ This checklist outlines areas identified for refactoring, fixing, or improvement
 ## Frontend (React Components & Logic)
 
 -   [X] **`ToolEditor` State Management:** Refactor complex `useState` usage (name, description, parameters, etc.) into a more structured approach, potentially using `useReducer` or a dedicated Zustand slice for the form state.
--   [ ] **`ToolEditor` Validation Logic:** Extract the `validateForm` function into a separate utility or custom hook. Improve error message handling (avoid hardcoding strings, provide clearer user feedback). Decouple validation logic from UI highlighting logic (`highlightedFields`).
--   [ ] **`ToolEditor` JSON Generation:** Move the `toolSpec` generation logic currently inside `useEffect` into a dedicated function within `toolSpecService.ts` or a similar utility file.
+-   [X] **`ToolEditor` Validation Logic:** Extract the `validateForm` function into a separate utility or custom hook. Improve error message handling (avoid hardcoding strings, provide clearer user feedback). Decouple validation logic from UI highlighting logic (`highlightedFields`).
+-   [X] **`ToolEditor` JSON Generation:** Move the `toolSpec` generation logic currently inside `useEffect` into a dedicated function within `toolSpecService.ts` or a similar utility file.
 -   [ ] **`ToolEditor` Event Handlers:** Extract complex handlers (`handleSave`, `handleDelete`, parameter/category updates) into `toolEditorHandlers.ts` or a custom hook to reduce component size and improve testability.
 -   [ ] **`ArrayItemConfig` Implementation:** Implement the placeholder `onUpdate` function passed to `ArrayItemConfig` within `ToolEditor.tsx`.
 -   [ ] **`ParameterEditor` Rendering:** Re-evaluate the `renderTypeSpecificFields` prop. Consider moving the responsibility for rendering type-specific fields *into* `ParameterEditor` based on the `param.type`, rather than having the parent inject JSX.

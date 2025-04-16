@@ -13,18 +13,25 @@ export default {
     // Mock problematic modules
     'ci-info': '<rootDir>/__mocks__/ci-info.js',
   },
+  // Include .cjs test files and extensions
+  moduleFileExtensions: ['js', 'jsx', 'ts', 'tsx', 'cjs', 'json', 'node'],
+  testMatch: [
+    '<rootDir>/test/**/*.test.cjs',
+    '<rootDir>/test/**/*.spec.cjs',
+    '<rootDir>/**/?(*.)+(spec|test).[jt]s?(x)'  // existing patterns
+  ],
   transform: {
     '^.+\\.(ts|tsx)$': ['ts-jest', {
       tsconfig: '<rootDir>/tsconfig.app.json',
       useESM: true,
     }],
-    // Handle other file types if needed
-    '^.+\\.(js|jsx)$': ['babel-jest', { rootMode: 'upward' }],
+    // Transform both .js and .cjs files with babel-jest
+    '^.+\\.(js|jsx|cjs)$': ['babel-jest', { rootMode: 'upward' }],
   },
   testPathIgnorePatterns: ['/node_modules/', '/dist/'],
   collectCoverage: true,
   collectCoverageFrom: [
-    'src/**/*.{ts,tsx}',
+    'src/**/*.{ts,tsx,js,jsx}',
     '!src/**/*.d.ts',
     '!src/main.tsx',
     '!src/vite-env.d.ts',
@@ -32,10 +39,13 @@ export default {
   // Handle ESM modules
   extensionsToTreatAsEsm: ['.ts', '.tsx'],
   transformIgnorePatterns: [
-    // This allows Jest to transform node_modules that use ESM
-    'node_modules/(?!(.*\\.mjs$|uuid|@lit|lit|lit-html|lit-element|@open-wc))'
+    'node_modules/(?!(puppeteer|@puppeteer|debug)/)',
   ],
   // Enable mocking of modules
   automock: false,
-  moduleDirectories: ['node_modules', 'src'],
+  moduleDirectories: ['node_modules', 'src', 'test'],
+  // Debugging settings
+  testTimeout: 30000,  // Longer timeout for E2E tests
+  verbose: true,       // More detailed output
+  maxWorkers: 1,       // Run tests sequentially for easier debugging
 }

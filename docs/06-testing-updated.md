@@ -165,6 +165,41 @@ Tools to consider:
 
 ---
 
+## End-to-End (E2E) Testing
+
+### Overview
+End-to-End tests validate critical user flows by simulating real user interactions in a browser environment. Puppeteer is used for these tests, with the option to run them in headless or visual mode.
+
+### Running E2E Tests
+
+1. **Start the Application**
+   Ensure the application is running locally on `http://localhost:3000`.
+
+   ```bash
+   npm run dev
+   ```
+
+2. **Run E2E Tests**
+   Execute the E2E tests using the following command:
+
+   ```bash
+   node e2e/example.test.js
+   ```
+
+   By default, the tests run in visual mode. To switch to headless mode, modify the `headless` option in the test script.
+
+3. **View Screenshots**
+   Screenshots are saved in the `e2e/screenshots` directory:
+   - `tool-created.png`: Captured after successfully creating a tool.
+   - `error.png`: Captured if an error occurs during the test.
+
+### Best Practices
+- Use meaningful selectors (e.g., `id` or `data-testid`) for reliable element targeting.
+- Keep tests isolated and focused on specific user flows.
+- Regularly update tests to reflect UI changes.
+
+---
+
 ## Resources
 
 - [Jest](https://jestjs.io/)
