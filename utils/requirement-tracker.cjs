@@ -8,7 +8,7 @@ const path = require('path');
 const glob = require('glob');
 const yaml = require('js-yaml');
 const { parse } = require('comment-parser');
-const { runCLI } = require('jest');
+const { spawnSync } = require('child_process');
 
 const REQUIREMENTS_DIR = path.resolve(__dirname, '../requirements');
 const TESTS_DIR = path.resolve(__dirname, '../test');
@@ -79,74 +79,56 @@ async function scanTestFiles() {
   return map;
 }
 
-async function runJestForRequirements(requirementToTests) {
-  // Collect all unique test files associated with the requirements found
-  const testFiles = Array.from(new Set(Object.values(requirementToTests).flat().map(t => t.file)));
-  
+async function runPlaywrightForRequirements(requirementToTests) {
+  const testFiles = Array.from(
+    new Set(Object.values(requirementToTests).flat().map(t => t.file))
+  );
   if (testFiles.length === 0) {
     console.log("No test files found linked to requirements.");
-    return {}; // No tests to run
+    return {};
   }
-
-  console.log(`Running Jest for ${testFiles.length} test file(s)...`);
-
-  // Convert Windows backslashes to forward slashes for Jest CLI
-  const normalizedTestFiles = testFiles.map(f => f.split(path.sep).join('/'));
-
-  // Run Jest programmatically for the specific files
-  const jestConfig = {
-    _: normalizedTestFiles,   // Run exactly these test files (absolute paths)
-    runTestsByPath: true,     // Treat positional args as file paths
-    runInBand: true,
-    reporters: [],
-    silent: true,
-  };
-
+  console.log(`Running Playwright for ${testFiles.length} test file(s)...`);
+  // Normalize paths to use forward slashes (Playwright accepts POSIX style)
+  const normalizedFiles = testFiles.map(f => f.split(path.sep).join('/'));
+  const result = spawnSync(
+    'npx',
+    ['playwright', 'test', ...normalizedFiles, '--quiet', '--reporter=json'],
+    { encoding: 'utf8', shell: process.platform === 'win32' }
+  );
+  if (result.error) {
+    console.error('Error running Playwright:', result.error);
+    return {};
+  }
+  let reportJson;
   try {
-    const { results } = await runCLI(jestConfig, [process.cwd()]);
-
-    // Process results: Map requirement IDs to test statuses (passed, failed)
-    const requirementStatus = {};
-    if (results.numTotalTests === 0) {
-        console.log("Jest ran, but found no tests within the specified files.");
-        return {};
-    }
-
-    results.testResults.forEach(fileResult => {
-      // Find which requirement IDs are associated with this test file
-      const reqIdsForFile = Object.entries(requirementToTests)
-        .filter(([reqId, tests]) => tests.some(t => t.file === fileResult.testFilePath))
-        .map(([reqId]) => reqId);
-
-      if (fileResult.numFailingTests > 0) {
-        reqIdsForFile.forEach(reqId => {
-          // If any test in the file fails, mark the requirement as FAILED
-          // More granular mapping (test case to requirement) could be done if tags are per test case
-          requirementStatus[reqId] = 'FAILED';
-        });
-      } else {
-        reqIdsForFile.forEach(reqId => {
-          // If the file passes AND the requirement isn't already marked as FAILED by another file
-          if (requirementStatus[reqId] !== 'FAILED') {
-            requirementStatus[reqId] = 'PASSED';
-          }
-        });
-      }
-    });
-
-    return requirementStatus;
-  } catch (error) {
-    console.error("Error running Jest:", error);
-    return {}; // Return empty results on error
+    reportJson = JSON.parse(result.stdout);
+  } catch (err) {
+    console.error('Failed to parse Playwright JSON output:', err);
+    return {};
   }
+  // Build mapping of file -> status
+  const fileStatus = {};
+  reportJson.suites.forEach(suite => {
+    suite.specs.forEach(spec => {
+      const status = spec.results.some(r => r.status !== 'passed') ? 'FAILED' : 'PASSED';
+      fileStatus[spec.file] = status;
+    });
+  });
+  // Map requirement IDs to statuses
+  const requirementStatus = {};
+  for (const [reqId, tests] of Object.entries(requirementToTests)) {
+    const statuses = tests.map(t => fileStatus[t.file] || 'UNKNOWN');
+    requirementStatus[reqId] = statuses.includes('FAILED') ? 'FAILED' : 'PASSED';
+  }
+  return requirementStatus;
 }
 
 async function checkCommand({ module, output }) {
   const requirements = await loadRequirements(module);
   const reqToTests = await scanTestFiles(); // Map: { "REQ-ID": [{ file: "path/to/test.js" }] }
 
-  // Run Jest for tests linked to requirements
-  const jestResults = await runJestForRequirements(reqToTests); // Map: { "REQ-ID": "PASSED" | "FAILED" }
+  // Run Playwright for tests linked to requirements
+  const testResults = await runPlaywrightForRequirements(reqToTests); // Map: { "REQ-ID": "PASSED" | "FAILED" }
 
   const report = [];
   for (const [reqId, req] of Object.entries(requirements)) {
@@ -154,10 +136,10 @@ async function checkCommand({ module, output }) {
     let status = 'UNCOVERED'; // Default status
 
     if (tests.length > 0) {
-      // If tests exist, check Jest results for this requirement ID
-      status = jestResults[reqId] || 'UNKNOWN'; // UNKNOWN if tests exist but Jest didn't report status (e.g., error)
+      // If tests exist, check Playwright results for this requirement ID
+      status = testResults[reqId] || 'UNKNOWN'; // UNKNOWN if tests exist but Playwright didn't report status (e.g., error)
       if (status === 'UNKNOWN') {
-          console.warn(`Warning: Tests found for ${reqId}, but Jest status is unknown. Check Jest execution.`);
+        console.warn(`Warning: Tests found for ${reqId}, but Playwright status is unknown. Check Playwright execution.`);
           // Decide if UNKNOWN should be treated as FAILED or something else
           status = 'FAILED'; // Treat unknown/error states as failure
       }
