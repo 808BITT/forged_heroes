@@ -1,3 +1,4 @@
+const { test, expect } = require('@playwright/test');
 const puppeteer = require('puppeteer');
 const path = require('path');
 
@@ -12,7 +13,7 @@ const TOOL_NAME_INPUT_SELECTOR = 'input#tool-name';
 const TOOL_DESCRIPTION_INPUT_SELECTOR = 'input#tool-description';
 const CATEGORY_SELECT_TRIGGER_SELECTOR = 'button#category'; // Assuming the trigger has id="category"
 const CATEGORY_OPTION_SELECTOR = (categoryName) => `//div[@role="option"][normalize-space()="${categoryName}"]`; // Updated to use XPath for better accuracy
-const ADD_PARAMETER_BUTTON_SELECTOR = 'button:contains("Add Parameter")'; // Adjust if needed
+const ADD_PARAMETER_BUTTON_SELECTOR = 'button[data-testid="add-parameter-button"]'; // Use data-testid instead of :contains
 const PARAM_NAME_INPUT_SELECTOR = (paramId) => `input#param-name-${paramId}`; // Example, adjust based on actual implementation
 const PARAM_DESCRIPTION_INPUT_SELECTOR = (paramId) => `input#param-description-${paramId}`; // Example, adjust based on actual implementation
 const SAVE_TOOL_BUTTON_SELECTOR = 'button[data-testid="save-tool-button"]';
@@ -27,11 +28,11 @@ const viewports = {
 
 console.log('Starting E2E test suite for REQ-TOOL-01');
 
-describe('E2E: REQ-TOOL-01 - Create Tool', () => {
+test.describe('E2E: REQ-TOOL-01 - Create Tool', () => {
   let browser;
   let page;
 
-  beforeAll(async () => {
+  test.beforeAll(async () => {
     console.log('Launching Puppeteer browser...');
     browser = await puppeteer.launch({
       headless: process.env.CI ? true : false, // Run headless in CI, headed locally for debugging
@@ -40,11 +41,13 @@ describe('E2E: REQ-TOOL-01 - Create Tool', () => {
     console.log('Browser launched.');
   });
 
-  afterAll(async () => {
-    await browser.close();
+  test.afterAll(async () => {
+    if (browser) {
+      await browser.close();
+    }
   });
 
-  beforeEach(async () => {
+  test.beforeEach(async () => {
     page = await browser.newPage();
     page.setDefaultTimeout(TIMEOUT);
     console.log('Navigating to Tools page...');
@@ -52,14 +55,14 @@ describe('E2E: REQ-TOOL-01 - Create Tool', () => {
     console.log('Navigation complete.');
   });
 
-  afterEach(async () => {
+  test.afterEach(async () => {
     await page.close();
   });
 
   // Loop through defined viewports
   Object.entries(viewports).forEach(([viewportName, viewportConfig]) => {
-    describe(`on ${viewportName} viewport`, () => {
-      beforeEach(async () => {
+    test.describe(`on ${viewportName} viewport`, () => {
+      test.beforeEach(async () => {
         await page.setViewport(viewportConfig);
       });
 
@@ -70,7 +73,7 @@ describe('E2E: REQ-TOOL-01 - Create Tool', () => {
       /**
        * @requirement REQ-TOOL-01
        */
-      it('should create a new tool without parameters', async () => {
+      test('should create a new tool without parameters', async () => {
         console.log('Starting test: Create tool without parameters');
         const toolName = `E2E Test Tool Simple ${viewportName} ${Date.now()}`;
         const toolDescription = 'A basic tool created via E2E test.';
@@ -137,7 +140,7 @@ describe('E2E: REQ-TOOL-01 - Create Tool', () => {
       /**
        * @requirement REQ-TOOL-01
        */
-      it('should create a new tool with parameters', async () => {
+      test('should create a new tool with parameters', async () => {
         console.log('Starting test: Create tool with parameters');
         const toolName = `E2E Test Tool Params ${viewportName} ${Date.now()}`;
         const toolDescription = 'A tool with parameters created via E2E test.';
@@ -173,8 +176,7 @@ describe('E2E: REQ-TOOL-01 - Create Tool', () => {
 
         // 5. Add a Parameter
         console.log('Adding parameters...');
-        await page.waitForSelector(ADD_PARAMETER_BUTTON_SELECTOR);
-        await page.click(ADD_PARAMETER_BUTTON_SELECTOR);
+        await clickElementByText(page, 'button', 'Add Parameter');
         console.log('Parameter added.');
 
         // Wait for the parameter editor section to appear/update
@@ -229,12 +231,14 @@ describe('E2E: REQ-TOOL-01 - Create Tool', () => {
 });
 
 // Helper function for contains text selector (if needed, though XPath is often better)
-puppeteer.registerCustomQueryHandler('contains', {
-  queryOne: (element, selector) => {
-    return element.querySelector(`*:contains("${selector}")`);
-  },
-  queryAll: (element, selector) => {
-    return element.querySelectorAll(`*:contains("${selector}")`);
+async function clickElementByText(page, selector, text) {
+  // Use XPath instead of custom query handler
+  const xpath = `//${selector}[contains(text(),"${text}")]`;
+  await page.waitForXPath(xpath);
+  const [element] = await page.$x(xpath);
+  if (element) {
+    await element.click();
+    return true;
   }
-});
-// Usage: await page.click(`button:contains("Add Parameter")`);
+  return false;
+}

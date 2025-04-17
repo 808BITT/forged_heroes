@@ -1,10 +1,11 @@
 // E2E Test for REQ-TOOL-01
+const { test, expect } = require('@playwright/test');
 const puppeteer = require('puppeteer');
 
 /**
  * @requirement REQ-TOOL-01 User can create a new tool with name, type, and optional description.
  */
-describe('E2E: REQ-TOOL-01 - Create Tool', () => {
+test.describe('E2E: REQ-TOOL-01 - Create Tool', () => {
   let browser;
   let page;
   const timeout = 30000; // 30 seconds timeout for operations
@@ -26,7 +27,7 @@ describe('E2E: REQ-TOOL-01 - Create Tool', () => {
     PARAM_DESCRIPTION_INPUT: 'input[id^="param-description-"]'
   };
 
-  beforeAll(async () => {
+  test.beforeAll(async () => {
     console.log('==== Starting REQ-TOOL-01 E2E Test ====');
     try {
       browser = await puppeteer.launch({
@@ -49,7 +50,7 @@ describe('E2E: REQ-TOOL-01 - Create Tool', () => {
     }
   });
 
-  afterAll(async () => {
+  test.afterAll(async () => {
     console.log('Closing browser...');
     if (browser) {
       await browser.close();
@@ -57,7 +58,7 @@ describe('E2E: REQ-TOOL-01 - Create Tool', () => {
     console.log('Browser closed');
   });
 
-  beforeEach(async () => {
+  test.beforeEach(async () => {
     console.log(`Navigating to ${APP_URL}...`);
     await page.goto(APP_URL, { waitUntil: 'networkidle0' });
   });

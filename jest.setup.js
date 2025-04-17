@@ -1,5 +1,3 @@
-import { vi } from 'vitest';
-
 // Mock import.meta.env for Jest
 Object.defineProperty(globalThis, 'import', {
   value: {
@@ -19,11 +17,24 @@ Object.defineProperty(globalThis, 'import', {
   writable: true
 });
 
+// Instead of mocking debug, set it up properly for Puppeteer
+if (!globalThis.process) {
+  globalThis.process = {};
+}
+if (!globalThis.process.env) {
+  globalThis.process.env = {};
+}
+
+// Fix for Puppeteer's debug module
+// This is a more robust approach than mocking
+globalThis.process.env.DEBUG = '';
+globalThis.process.type = 'browser';
+
 // Identity mock for JSON files
-vi.mock('*.json', () => ({}), { virtual: true });
+jest.mock('*.json', () => ({}), { virtual: true });
 
 // Make sure CI info is properly handled
-vi.mock('ci-info', () => ({
+jest.mock('ci-info', () => ({
   isCI: false,
   name: null,
   ENVS: [],
@@ -31,4 +42,4 @@ vi.mock('ci-info', () => ({
 }));
 
 // Suppress console errors during tests
-console.error = vi.fn();
+console.error = jest.fn();

@@ -1,17 +1,17 @@
 // Debug-friendly Puppeteer test for REQ-TOOL-01
 const puppeteer = require('puppeteer');
-const { test, expect, beforeAll, afterAll, describe } = require('@jest/globals');
+const { test, expect } = require('@playwright/test');
 
 /**
  * @requirement REQ-TOOL-01 User can create a new tool with name, type, and optional description.
  */
-describe('E2E: REQ-TOOL-01 - Create and Delete Tool', () => {
+test.describe('E2E: REQ-TOOL-01 - Create and Delete Tool', () => {
     let browser;
     let page;
     const timeout = 10000; // Increased timeout for debugging
     const baseUrl = 'http://localhost:5173/'; // Base URL for the application
 
-    beforeAll(async () => {
+    test.beforeAll(async () => {
         console.log('Starting browser for E2E test...');
         browser = await puppeteer.launch({ 
             headless: false, // Set to false for visual debugging
@@ -19,15 +19,20 @@ describe('E2E: REQ-TOOL-01 - Create and Delete Tool', () => {
             args: ['--window-size=1280,800'],
             defaultViewport: { width: 1280, height: 800 }
         });
-        page = await browser.newPage();
-        page.setDefaultTimeout(timeout);
         console.log('Browser started');
     });
 
-    afterAll(async () => {
+    test.afterAll(async () => {
         console.log('Closing browser...');
-        await browser.close();
+        if (browser) await browser.close();
         console.log('Browser closed');
+    });
+
+    test.beforeEach(async () => {
+        console.log(`Navigating to ${baseUrl}...`);
+        page = await browser.newPage();
+        page.setDefaultTimeout(timeout);
+        await page.goto(baseUrl, { waitUntil: 'networkidle0' });
     });
 
     test('should create a new tool with name and description', async () => {

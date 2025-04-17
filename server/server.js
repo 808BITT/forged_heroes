@@ -4,7 +4,6 @@ const sqlite3 = require('sqlite3').verbose();
 const { v4: uuidv4 } = require('uuid');
 const swaggerJsDoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
-const fs = require('fs').promises;
 const path = require('path');
 const validateToolSpec = require('./validation/toolSchema');
 const Ajv = require('ajv');
@@ -96,18 +95,6 @@ const db = new sqlite3.Database(DB_PATH, (err) => {
     });
   }
 });
-
-const TOOLS_FILE = path.join(__dirname, 'tools.json');
-
-// Ensure data directory exists
-async function ensureDataDir() {
-  const dir = path.dirname(TOOLS_FILE);
-  try {
-    await fs.mkdir(dir, { recursive: true });
-  } catch (error) {
-    console.error('Error ensuring data directory:', error);
-  }
-}
 
 // Updated loadTools function to fetch from SQLite database
 async function loadTools() {
