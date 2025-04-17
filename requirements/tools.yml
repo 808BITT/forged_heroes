@@ -34,7 +34,7 @@ requirements:
 
   - id: REQ-TOOL-06
     type: feature
-    description: "Tools are listed in a scrollable UI with their name, type, and status displayed."
+    description: "Tools are listed in a scrollable UI with their name, type, and parans are displayed on hover."
     tags: [list, ui, tool]
 
   - id: REQ-TOOL-07

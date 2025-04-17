@@ -14,7 +14,8 @@
     "test:ci": "playwright test --reporter=github",
     "e2e": "node e2e/01_basic_crud.test.js",
     "req-check": "node utils/requirement-tracker.cjs check",
-    "req-report": "node utils/requirement-tracker.cjs report"
+    "req-report": "node utils/requirement-tracker.cjs report",
+    "req-check-lite": "node utils/requirement-tracker.cjs check --output=json"
   },
   "dependencies": {
     "@puppeteer/replay": "^3.1.1",
