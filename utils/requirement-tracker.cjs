@@ -21,6 +21,10 @@ function parseArgs() {
     if (arg.startsWith('--module=')) options.module = arg.split('=')[1];
     if (arg.startsWith('--output=')) options.output = arg.split('=')[1];
     if (arg === '--update') options.update = true;
+    if (arg === '--fast') options.fast = true;
+    if (arg === '--headless') options.headless = true;
+    if (arg.startsWith('--workers=')) options.workers = parseInt(arg.split('=')[1], 10);
+    if (arg.startsWith('--batch-size=')) options.batchSize = parseInt(arg.split('=')[1], 10);
   }
   return { command, options };
 }
@@ -79,7 +83,7 @@ async function scanTestFiles() {
   return map;
 }
 
-async function runPlaywrightForRequirements(requirementToTests) {
+async function runPlaywrightForRequirements(requirementToTests, options = {}) {
   const testFiles = Array.from(
     new Set(Object.values(requirementToTests).flat().map(t => t.file))
   );
@@ -87,48 +91,114 @@ async function runPlaywrightForRequirements(requirementToTests) {
     console.log("No test files found linked to requirements.");
     return {};
   }
-  console.log(`Running Playwright for ${testFiles.length} test file(s)...`);
+
   // Normalize paths to use forward slashes (Playwright accepts POSIX style)
   const normalizedFiles = testFiles.map(f => f.split(path.sep).join('/'));
-  const result = spawnSync(
+
+  // Process test files in batches to avoid memory issues
+  const batchSize = options.batchSize || (options.fast ? 5 : 10);
+  const fileStatus = {};
+
+  // Set worker count (default to 1/4 of CPU cores if not specified)
+  const workers = options.workers || Math.max(1, Math.floor(require('os').cpus().length / 4));
+
+  console.log(`Running Playwright for ${testFiles.length} test file(s) with ${workers} workers in ${Math.ceil(normalizedFiles.length / batchSize)} batches...`);
+
+  // Run Playwright directly (no batching) with --project=chromium to get a list of test names
+  const testListResult = spawnSync(
     'npx',
-    ['playwright', 'test', ...normalizedFiles, '--quiet', '--reporter=json'],
+    ['playwright', 'test', '--list', '--project=chromium', '--reporter=json'],
     { encoding: 'utf8', shell: process.platform === 'win32' }
   );
-  if (result.error) {
-    console.error('Error running Playwright:', result.error);
-    return {};
+
+  // Create a mapping of test files to their test names
+  const testsByFile = {};
+  if (testListResult.stdout) {
+    try {
+      const testListJson = JSON.parse(testListResult.stdout);
+      for (const suite of testListJson.suites || []) {
+        for (const spec of suite.specs || []) {
+          const testFile = spec.file;
+          const testName = spec.title;
+          if (!testsByFile[testFile]) testsByFile[testFile] = [];
+          testsByFile[testFile].push(testName);
+        }
+      }
+    } catch (error) {
+      console.error('Error parsing Playwright test list JSON:', error);
+    }
   }
-  let reportJson;
-  try {
-    reportJson = JSON.parse(result.stdout);
-  } catch (err) {
-    console.error('Failed to parse Playwright JSON output:', err);
-    return {};
+
+  for (let i = 0; i < normalizedFiles.length; i += batchSize) {
+    const batchFiles = normalizedFiles.slice(i, i + batchSize);
+    console.log(`Running batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(normalizedFiles.length / batchSize)} (${batchFiles.length} files)...`);
+
+    // Configure Playwright arguments for this batch
+    const playwrightArgs = ['playwright', 'test', '--reporter=json', ...batchFiles];
+
+    // Add performance options
+    playwrightArgs.push('--workers=' + workers);
+    if (options.fast) playwrightArgs.push('--project=chromium', '--timeout=30000');
+    // Replace '--headless' with '--project=chromium' for compatibility
+    if (options.headless !== false) playwrightArgs.push('--project=chromium'); // Ensure compatibility with Playwright CLI
+    else playwrightArgs.push('--headed'); // Add fallback for headed mode
+
+  // Run the tests for this batch
+    const result = spawnSync(
+      'npx',
+      playwrightArgs,
+      { encoding: 'utf8', shell: process.platform === 'win32', maxBuffer: 10 * 1024 * 1024 }
+    );
+
+    if (result.error) {
+      console.error('Error running Playwright:', result.error);
+      continue;
+    }
+
+    // Debugging: Log raw output for each batch
+    console.log(`Raw Playwright output for batch ${Math.floor(i / batchSize) + 1}:`);
+    console.log(result.stdout || '<No stdout>');
+    console.log(result.stderr || '<No stderr>');
+
+    // Parse the output to determine which files passed/failed
+    try {
+      if (!result.stdout.trim()) {
+        console.warn(`Batch ${Math.floor(i / batchSize) + 1} produced no JSON output.`);
+        continue;
+      }
+
+      const outputJson = JSON.parse(result.stdout);
+      for (const suite of outputJson.suites || []) {
+        for (const spec of suite.specs || []) {
+          const file = spec.file;
+          const status = spec.ok ? 'PASSED' : 'FAILED';
+          fileStatus[file] = status;
+        }
+      }
+    } catch (error) {
+      console.error(`Error parsing Playwright JSON output for batch ${Math.floor(i / batchSize) + 1}:`, error);
+      console.error('Raw stdout:', result.stdout || '<No stdout>');
+      console.error('Raw stderr:', result.stderr || '<No stderr>');
+    }
   }
-  // Build mapping of file -> status
-  const fileStatus = {};
-  reportJson.suites.forEach(suite => {
-    suite.specs.forEach(spec => {
-      const status = spec.results.some(r => r.status !== 'passed') ? 'FAILED' : 'PASSED';
-      fileStatus[spec.file] = status;
-    });
-  });
+
   // Map requirement IDs to statuses
   const requirementStatus = {};
   for (const [reqId, tests] of Object.entries(requirementToTests)) {
     const statuses = tests.map(t => fileStatus[t.file] || 'UNKNOWN');
-    requirementStatus[reqId] = statuses.includes('FAILED') ? 'FAILED' : 'PASSED';
+    requirementStatus[reqId] = statuses.includes('FAILED') ? 'FAILED' :
+      statuses.includes('PASSED') ? 'PASSED' : 'UNKNOWN';
   }
+
   return requirementStatus;
 }
 
-async function checkCommand({ module, output }) {
+async function checkCommand({ module, output, ...options }) {
   const requirements = await loadRequirements(module);
   const reqToTests = await scanTestFiles(); // Map: { "REQ-ID": [{ file: "path/to/test.js" }] }
 
   // Run Playwright for tests linked to requirements
-  const testResults = await runPlaywrightForRequirements(reqToTests); // Map: { "REQ-ID": "PASSED" | "FAILED" }
+  const testResults = await runPlaywrightForRequirements(reqToTests, options); // Map: { "REQ-ID": "PASSED" | "FAILED" }
 
   const report = [];
   for (const [reqId, req] of Object.entries(requirements)) {
