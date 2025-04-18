@@ -2,17 +2,12 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Plus, PlusCircle, Save, Trash } from "lucide-react";
 import { useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { validateToolForm } from "../lib/validation";
 import toolsApi from "../services/apiService";
-import { useToolEditorStore, Parameter, Category } from "../store/toolStore";
-import { useToolStore } from "../store/toolStore";
+import { Category, Parameter, useToolEditorStore, useToolStore } from "../store/toolStore";
 import ArrayItemConfig from "./ArrayItemConfig";
 import JsonPreview from "./JsonPreview";
 import ParameterEditor from "./ParameterEditor";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label.tsx";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { Textarea } from "./ui/textarea.tsx";
 import {
     handleAddParameter,
     handleRemoveParameter,
@@ -22,6 +17,7 @@ import {
     handleUpdateParameter,
     handleUpdateParameterDependency,
 } from "./toolEditorHandlers";
+import { Button } from "./ui/button";
 import {
     Dialog,
     DialogContent,
@@ -30,9 +26,127 @@ import {
     DialogHeader,
     DialogTitle,
 } from "./ui/dialog";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label.tsx";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { Textarea } from "./ui/textarea.tsx";
 import { useToast } from "./ui/use-toast";
-import { validateToolForm } from "../lib/validation";
-import { generateToolSpec } from "../services/toolSpecService";
+
+function generateToolSpec(name: string, description: string, parameters: Parameter[]): string {
+    const toolSpec = {
+        type: "function",
+        function: {
+            name: name.toLowerCase().replace(/\s+/g, '_'),
+            description: description,
+            parameters: {
+                type: "object",
+                properties: parameters.reduce((acc: Record<string, any>, param: Parameter) => {
+                    if (param.name) {
+                        const paramSpec: any = {
+                            type: param.type === 'integer' ? 'integer' : param.type,
+                            description: param.description,
+                        };
+
+                        if (param.format && (param.type === 'string' || param.type === 'number' || param.type === 'integer')) {
+                            paramSpec.format = param.format;
+                        }
+
+                        if (param.type === 'enum' && param.enumValues && param.enumValues.length > 0) {
+                            paramSpec.type = 'string';
+                            paramSpec.enum = param.enumValues;
+                        }
+
+                        if ((param.type === 'number' || param.type === 'integer') && param.minimum !== '') {
+                            paramSpec.minimum = Number(param.minimum);
+                        }
+                        if ((param.type === 'number' || param.type === 'integer') && param.maximum !== '') {
+                            paramSpec.maximum = Number(param.maximum);
+                        }
+
+                        if (param.default !== '') {
+                            paramSpec.default = convertDefaultValue(param.type, param.default || '');
+                        }
+
+                        if (param.type === 'array') {
+                            paramSpec.items = {
+                                type: param.arrayItemType || 'string',
+                                description: param.arrayItemDescription || '',
+                            };
+
+                            if (param.arrayItemType === 'object' && param.objectProperties) {
+                                paramSpec.items.properties = param.objectProperties;
+                            }
+                        }
+
+                        if (param.type === 'object' && param.objectProperties) {
+                            paramSpec.properties = param.objectProperties;
+                        }
+
+                        acc[param.name] = paramSpec;
+                    }
+                    return acc;
+                }, {} as Record<string, any>),
+                required: parameters
+                    .filter((param: Parameter) => param.required && param.name)
+                    .map((param: Parameter) => param.name),
+            },
+        },
+    };
+
+    const paramDependencies = parameters.filter((p: Parameter) => p.dependencies && p.name);
+    if (paramDependencies.length > 0) {
+        const paramsObj = toolSpec.function.parameters as any;
+        if (!paramsObj.dependencyMap) {
+            paramsObj.dependencyMap = {};
+        }
+
+        paramDependencies.forEach((param: Parameter) => {
+            if (!param.dependencies || !param.name) return;
+
+            paramsObj.dependencyMap[param.name] = {
+                conditions: param.dependencies.conditions.map((c: any) => {
+                    const sourceParam = parameters.find((p: Parameter) => p.id === c.paramId);
+                    if (!sourceParam || !sourceParam.name) return null;
+
+                    return {
+                        sourceParam: sourceParam.name,
+                        operator: c.operator,
+                        value: c.value,
+                    };
+                }).filter(Boolean),
+                effect: param.dependencies.effect,
+            };
+        });
+    }
+
+    return JSON.stringify(toolSpec, null, 2);
+}
+
+function convertDefaultValue(type: string, defaultValue: string): any {
+    switch (type) {
+        case 'string':
+            return defaultValue;
+        case 'number':
+        case 'integer':
+            return Number(defaultValue);
+        case 'boolean':
+            return defaultValue.toLowerCase() === 'true';
+        case 'array':
+            try {
+                return JSON.parse(defaultValue);
+            } catch {
+                return [];
+            }
+        case 'object':
+            try {
+                return JSON.parse(defaultValue);
+            } catch {
+                return {};
+            }
+        default:
+            return defaultValue;
+    }
+}
 
 export default function ToolEditor() {
     const { id } = useParams<{ id: string }>();

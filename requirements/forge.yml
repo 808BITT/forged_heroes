@@ -1,0 +1,131 @@
+module: forge
+version: 0.1.0
+owner: qa
+description: >
+  This file defines the functional and behavioral requirements for the Forge module in Llero.
+  Forge is the page where users can create, edit, and manage tools within the Llero platform.
+    - includes features for creating new tools, editing existing ones, and deleting tools.
+    - includes validation rules to ensure that the tools are created with valid data.
+    - includes UI elements for displaying the list of tools, including hover effects to show additional information.
+assertions:
+  validation:
+    - req: "it will require a name, description and category for tools to be created"
+      id: REQ-FORGE-VALIDATION-01
+    - req: "it will ensure that all tool names within a category are unique"
+      id: REQ-FORGE-VALIDATION-02
+    - req: "it will not allow tools to be created without a name"
+      id: REQ-FORGE-CREATE-11
+    - req: "it will not allow tools to be created without a description"
+      id: REQ-FORGE-CREATE-12
+    - req: "it will not allow tools to be created without a category"
+      id: REQ-FORGE-CREATE-13
+    - req: "it will provide a success message when a tool is created successfully"
+      id: REQ-FORGE-VALIDATION-03
+    - req: "it will provide an error message when a tool creation fails with error details"
+      id: REQ-FORGE-VALIDATION-04
+  tool-list:
+    - req: "it will allow users to view a list of all tools"
+      id: REQ-FORGE-VIEW-01
+    - req: "it will paginate the tool list when there are more than 10 tools"
+      id: REQ-FORGE-VIEW-02
+    - req: "it will allow users to view tool details on hover"
+      id: REQ-FORGE-VIEW-03
+    - req: "it will allow users to open tools into the tool editor on click"
+      id: REQ-FORGE-VIEW-04
+    - req: "it will allow users to filter tools by category"
+      id: REQ-FORGE-VIEW-05
+    - req: "it will allow users to search for tools by name"
+      id: REQ-FORGE-VIEW-06
+    - req: "it will provide a loading indicator while the tool list is being fetched"
+      id: REQ-FORGE-VIEW-07
+  tool-creator:
+    - req: "it will allow tools to be created with no parameters"
+      id: REQ-FORGE-CREATE-01
+    - req: "it will allow tools to be created with a parameter"
+      id: REQ-FORGE-CREATE-02
+    - req: "it will allow tools to be created with multiple parameters"
+      id: REQ-FORGE-CREATE-03
+    - req: "it will provide a cancel button to abort the tool creation process"
+      id: REQ-FORGE-CREATE-04
+    - req: "it will provide a preview of the tool before it is created"
+      id: REQ-FORGE-CREATE-05
+    - req: "it will provide a confirmation dialog before creating the tool"
+      id: REQ-FORGE-CREATE-06
+    - req: "it will provide a loading indicator while the tool is being created"
+      id: REQ-FORGE-CREATE-07
+  tool-editor:
+    - req: "it will allow users to edit the name, description, and category of existing tools"
+      id: REQ-FORGE-EDIT-01
+    - req: "it will allow users to edit the parameters of existing tools"
+      id: REQ-FORGE-EDIT-02
+    - req: "it will provide a success message when a tool is edited successfully"
+      id: REQ-FORGE-EDIT-03
+    - req: "it will provide an error message when a tool editing fails"
+      id: REQ-FORGE-EDIT-04
+    - req: "it will allow users to copy a tool's JSON output"
+      desc: "e.g., 'Copy to clipboard' button"
+      id: REQ-FORGE-EDIT-01
+    - req: "it will provide a success message when a tool's JSON output is copied successfully"
+      desc: "e.g., 'Tool copied to clipboard'"
+      id: REQ-FORGE-EDIT-02
+    - req: "it will provide an error message when copying a tool's JSON output fails"
+      desc: "e.g., 'Failed to copy tool to clipboard'"
+      id: REQ-FORGE-EDIT-03
+    - req: "it will provide a loading indicator while the tool is being deleted"
+      id: REQ-FORGE-EDIT-01
+    - req: "it will provide a confirmation dialog before deleting the tool"
+      id: REQ-FORGE-EDIT-02
+    - req: "it will provide a success message when a tool is deleted successfully"
+      id: REQ-FORGE-EDIT-03
+    - req: "it will provide an error message when a tool deletion fails"  
+      id: REQ-FORGE-EDIT-04
+    - req: "it will allow users to favorite a tool"
+      id: REQ-FORGE-FAVORITE-01
+    - req: "it will allow users to unfavorite a tool"
+      id: REQ-FORGE-FAVORITE-02
+    - req: "it will provide a success message when a tool is favorited successfully"
+      id: REQ-FORGE-FAVORITE-03
+    - req: "it will provide an error message when a tool favoriting fails"
+      id: REQ-FORGE-FAVORITE-04
+
+
+stories:
+  regular-user:
+    - iWant: "to create a tool with a name, description, and category"
+      soThat: "I can manage my tools effectively"
+      id: US-USR-01
+    - iWant: "to edit an existing tool's name, description, and category"
+      soThat: "I can update my tools as needed"
+      id: US-USR-02
+    - iWant: "to delete a tool I no longer need"
+      soThat: "I can keep my tool list clean and organized"
+      id: US-USR-03
+    - iWant: "to view a list of all my tools"
+      soThat: "I can easily find and manage them"
+      id: US-USR-04
+    - iWant: "to filter tools by category"
+      soThat: "I can find tools more easily"
+      id: US-USR-05
+    - iWant: "to search for tools by name"
+      soThat: "I can find tools more easily"
+      id: US-USR-06
+    - iWant: "to favorite tools in the tool list"
+      soThat: "I don't have to search for them every time"
+      id: US-USR-07
+    - iWant: "to easily copy a tool's JSON output"
+      soThat: "I can use my tools outside of Llero"
+      id: US-USR-08
+  power-user:
+    - iWant: "to bulk create tools via CSV upload"
+      soThat: "I can add multiple generated tools at once"
+      id: US-PWR-01
+    - iWant: "to bulk edit tools"
+      soThat: "I can save time updating multiple similar tools"
+      id: US-PWR-02
+  administrator:
+    - iWant: "to view a log of all user actions"
+      soThat: "I can audit changes and behaviors in the system and identify special users"
+      id: US-ADMN-01
+    - iWant: "to set permissions for who can create, edit, or delete tools"
+      soThat: "I can control access to tools"
+      id: US-ADMN-02
